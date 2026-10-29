@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: hostel-khata-api
+    runtime: docker
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    preDeployCommand: npm run db:migrate
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        sync: false
+      - key: USE_CLAUDE_STUB
+        value: "false"
+      - key: TRUST_PROXY_HOPS
+        value: "1"

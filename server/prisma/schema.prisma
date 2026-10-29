@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Group {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  members   Member[]
+  expenses  Expense[]
+  @@map("groups")
+}
+
+model Member {
+  id       String @id @default(cuid())
+  groupId  String @map("group_id")
+  name     String
+  upiId    String? @map("upi_id")
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  payments Expense[]
+  shares   ExpenseShare[]
+  @@unique([groupId, name])
+  @@index([groupId])
+  @@map("members")
+}
+
+model Expense {
+  id          String @id @default(cuid())
+  groupId     String @map("group_id")
+  payerId     String @map("payer_id")
+  amountPaise Int @map("amount_paise")
+  description String
+  category    String
+  date        String
+  rawText     String? @map("raw_text")
+  createdAt   DateTime @default(now()) @map("created_at")
+  group       Group @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  payer       Member @relation(fields: [payerId], references: [id], onDelete: Restrict)
+  shares      ExpenseShare[]
+  @@index([groupId, date])
+  @@index([payerId])
+  @@map("expenses")
+}
+
+model ExpenseShare {
+  id         String @id @default(cuid())
+  expenseId  String @map("expense_id")
+  memberId   String @map("member_id")
+  sharePaise Int @map("share_paise")
+  expense    Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  member     Member @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  @@unique([expenseId, memberId])
+  @@index([memberId])
+  @@map("expense_shares")
+}
