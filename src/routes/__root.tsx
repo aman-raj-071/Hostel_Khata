@@ -80,7 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Hostel Khata — voice-first expense splitter" },
+      { title: "Hostel Khata — shared expense splitter" },
       {
         name: "description",
         content: "Split hostel and flat expenses by speaking or pasting WhatsApp chat.",

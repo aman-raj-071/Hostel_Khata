@@ -228,33 +228,9 @@ body {
 .app-frame {
   border-inline: 1px solid var(--border);
 }
-.voice-hero {
+.expense-hero {
   background:
     radial-gradient(ellipse at 50% 45%, oklch(0.72 0.14 78 / 0.13), transparent 65%), var(--card);
-}
-.hero-mic {
-  box-shadow:
-    0 0 0 12px oklch(0.81 0.155 78 / 0.05),
-    0 0 0 26px oklch(0.81 0.155 78 / 0.025),
-    0 14px 70px oklch(0.81 0.155 78 / 0.2);
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-.hero-mic:hover {
-  transform: translateY(-3px);
-  box-shadow:
-    0 0 0 15px oklch(0.81 0.155 78 / 0.09),
-    0 14px 80px oklch(0.81 0.155 78 / 0.3);
-}
-.is-listening {
-  animation: mic-glow 1.6s ease-in-out infinite alternate;
-}
-.waveform span {
-  width: 4px;
-  border-radius: 5px;
-  background: var(--primary);
-  animation: wave 0.65s ease-in-out infinite alternate;
 }
 .receipt-card {
   position: relative;
@@ -333,30 +309,11 @@ main li:nth-child(3) {
     transform: translateY(0);
   }
 }
-@keyframes mic-glow {
-  to {
-    box-shadow:
-      0 0 0 20px oklch(0.81 0.155 78 / 0.1),
-      0 0 90px oklch(0.81 0.155 78 / 0.3);
-  }
-}
-@keyframes wave {
-  to {
-    transform: scaleY(0.3);
-  }
-}
 @keyframes confetti-fall {
   to {
     top: 110%;
     rotate: 360deg;
     opacity: 0;
-  }
-}
-@media (min-width: 768px) {
-  .voice-toolbar {
-    max-width: 38rem;
-    align-self: center;
-    width: calc(100% - 4rem);
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { BarChart3, History, Menu, Mic, Scale, Users, Wallet, Sparkles } from "lucide-react";
+import { BarChart3, History, Menu, Plus, Scale, Users, Wallet, Sparkles } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Sun, Moon } from "lucide-react";
 import {
@@ -10,12 +10,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useGroup } from "@/lib/queries";
 import { ErrorState } from "@/components/States";
-import { VoiceControl } from "@/components/VoiceControl";
 import { DraftRecovery } from "@/components/DraftRecovery";
 import { GroupTools } from "@/components/GroupTools";
 
 const TABS = [
-  { to: "/", label: "Add", icon: Mic },
+  { to: "/", label: "Add", icon: Plus },
   { to: "/balances", label: "Balances", icon: Scale },
   { to: "/settle", label: "Settle", icon: Wallet },
   { to: "/history", label: "History", icon: History },
@@ -83,20 +82,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </DropdownMenu>
         </div>
       </header>
-      <VoiceControl>
-        <main className="flex-1 px-4 pb-32 pt-8 md:px-8 md:pt-10">
-          {group && <DraftRecovery key={group.id} groupId={group.id} />}
-          {group && <GroupTools />}
-          {groupQuery.isError ? (
-            <ErrorState error={groupQuery.error} onRetry={() => groupQuery.refetch()} />
-          ) : (
-            children
-          )}
-        </main>
-      </VoiceControl>
-      <div className="voice-hint pointer-events-none fixed bottom-24 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-primary/25 bg-card/95 px-4 py-2 text-xs text-muted-foreground shadow-lg">
-        Try: <span className="text-primary">“balances kholo”</span>
-      </div>
+      <main className="flex-1 px-4 pb-32 pt-8 md:px-8 md:pt-10">
+        {group && <DraftRecovery key={group.id} groupId={group.id} />}
+        {group && <GroupTools />}
+        {groupQuery.isError ? (
+          <ErrorState error={groupQuery.error} onRetry={() => groupQuery.refetch()} />
+        ) : (
+          children
+        )}
+      </main>
       <nav
         aria-label="Main navigation"
         className="fixed inset-x-3 bottom-3 z-30 mx-auto max-w-2xl rounded-3xl border border-border bg-card/95 p-1 shadow-2xl backdrop-blur-xl"

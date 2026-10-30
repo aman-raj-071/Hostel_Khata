@@ -15,9 +15,6 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("@/lib/queries", () => ({
   useGroup: () => ({ data: { id: "theme-group", name: "Flat 302", members: [] }, isError: false }),
 }));
-vi.mock("@/components/VoiceControl", () => ({
-  VoiceControl: ({ children }: { children: ReactNode }) => <>{children}</>,
-}));
 afterEach(() => {
   cleanup();
   localStorage.clear();

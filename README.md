@@ -1,20 +1,18 @@
 # Hostel Khata
 
-For hostel and flatmate groups who lose shared chai, food, bills and repayments in chat noise. Speak a Hinglish expense, review the split and confirm it; see balances without login. Includes WhatsApp imports, voice navigation, paise rounding, UPI/QR, four reminder tones, reports and shareable Hostel Wrapped stories.
+For hostel and flatmate groups who lose shared chai, food, bills and repayments in chat noise. Speak a Hinglish expense, review the split and confirm it; see balances without login. Includes WhatsApp imports, paise rounding, UPI/QR, four reminder tones, reports and shareable Hostel Wrapped stories.
 
 Deployed frontend: **YOUR_VERCEL_URL**. Backend: **YOUR_RENDER_OR_RAILWAY_URL**. These are placeholders, not live deployments.
 
-Wispr Flow can dictate into the expense textarea, coding prompts, docs and commit-message fields. In-app voice uses browser SpeechRecognition; Wispr Flow remains the text-input fallback. Record your own use for the challenge: the app cannot verify which keyboard input was dictated.
+Wispr Flow can dictate into the expense textarea, coding prompts, docs and commit-message fields. Wispr Flow supplies text through ordinary field input. Record your own use for the challenge: the app cannot verify which keyboard input was dictated.
 
 The expanded seed has 25 expenses over 30 days, including old net dues, chai, a big dinner, gas and WiFi. It adds missing demo entries without overwriting existing expenses, member settings or UPI IDs. `samples/chat.txt` contains 20 dated import examples; change dates for your demo month if needed.
 
 **Wrapped:** `/wrapped` has swipeable stories, awards and PNG export. `GET /api/wrapped?month=YYYY-MM` returns `{ total, awards, biggestExpense }`. Awards are computed in code; one Claude call supplies captions, or deterministic stub captions are used. Repayments affect net dues but not spending awards. Debt age uses FIFO net dues. A bounded process-local group/month cache invalidates on changed facts; restarts clear it and multiple instances need shared persistence.
 
-**Hands-free:** “wrapped dikhao”, “settle up kholo”, “reminder bhejo”, “haan theek hai” extend existing commands. Multiple reminders require the displayed button number. Unsupported browsers hide the mic and retain typed/Wispr input. Dictation treats commands as text until “likhna band”; saving and UPI payments still require confirmation.
-
 **Reminder tones:** on Settle, choose Send reminder → polite / filmy / mummy / savage → edit → Copy or Send on WhatsApp. WhatsApp opens a draft and lets you pick the recipient; no message is sent automatically. `POST /api/reminder` accepts `{ fromId, toId, amount, tone }`, returns `{ message }`, and permits 10 requests/minute/IP. Both members must be in the configured group, different, and the amount positive with at most two decimals. Missing UPI IDs prompt the creditor to share one. Stub mode has two deterministic variants per tone; Generate again returns the same text for the same payment/tone. Disable the stub and set the existing server key/model variables for real Claude. Wrapped is limited to 20 requests/minute/IP.
 
-Voice-first Hinglish expense splitting for a public demo group. The existing Lovable React/TypeScript/Tailwind frontend uses TanStack Start. `src/lib/api.ts` calls an Express API in `server/`; shared types remain in `src/lib/types.ts` and Zod contracts are in `src/lib/contracts.ts`.
+Hinglish expense splitting for a public demo group. The existing Lovable React/TypeScript/Tailwind frontend uses TanStack Start. `src/lib/api.ts` calls an Express API in `server/`; shared types remain in `src/lib/types.ts` and Zod contracts are in `src/lib/contracts.ts`.
 
 ## Local setup
 
@@ -104,32 +102,9 @@ Net = paid minus shares, including repayments. Settlements preserve every paise 
 
 There is intentionally no auth. Anyone with API access can read/edit the public group, including its UPI IDs. CORS is not authentication. Use demo data. Parsing is limited to 10 requests/minute/IP with an in-process store; use a shared limiter if deploying multiple replicas. JSON bodies are capped at 128 KiB and parse text at 20,000 characters.
 
-## Voice control
+## Wispr Flow input
 
-Every page has a **Start voice** toolbar. Choose English/Hinglish (`en-IN`) or Hindi (`hi-IN`), then press Start and allow the browser microphone prompt. No microphone access starts automatically. Use a browser with Web Speech recognition support (typically Chrome or Edge); if unavailable, the toolbar shows an explanation and typing/Wispr Flow remain available. HTTPS or localhost is required. Browser recognition may use a remote speech service and need internet; this feature is not guaranteed to work offline. Audio is handled by the browser, not sent to the Express API; only confirmed text reaches the existing parser.
-
-While listening, numbered badges identify the page's fields, buttons, tabs, links and dropdown options. Existing app validation and confirmation dialogs still apply.
-
-| Say                                                                                                             | Action                                                                           |
-| --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `add kholo`, `balances kholo`, `settle kholo`, `history kholo`, `report kholo`, `members kholo`, `review kholo` | Open that page                                                                   |
-| `बैलेंस दिखाओ`, `रिपोर्ट खोलो`                                                                                  | Hindi navigation                                                                 |
-| `click 5`, `button five`, `बटन पांच`                                                                            | Activate/focus numbered control 5                                                |
-| `click Paid by`, then `click 7`                                                                                 | Open a dropdown, then select its numbered option                                 |
-| `likho Kabir ne dinner 500 kiya`                                                                                | Replace the focused field, or the only text field                                |
-| `likhna shuru` → expense sentences → `likhna band`                                                              | Dictate into the selected text field, then return to command mode                |
-| `parse karo`, `save karo`                                                                                       | Use the existing Parse or Save action; ambiguous buttons require a number        |
-| `confirm`, `cancel`                                                                                             | Confirm/cancel the currently displayed app dialog; nothing is silently confirmed |
-| `search chai`                                                                                                   | Search the History page                                                          |
-| `neeche jao`, `upar jao`                                                                                        | Scroll the page or open scrollable dialog                                        |
-| `mic band`, `stop listening`                                                                                    | Release the microphone                                                           |
-| `help`                                                                                                          | Show/hide the command guide                                                      |
-
-For number/date fields use complete values: `likho 500.50`, or `likho 2026 dash 10 dash 29`. UPI fields understand `aman dot raj at ybl`; always check the recognized value before saving. Controls with the same label must be selected by number. In dictation mode, phrases such as "save karo" become text until you say "likhna band". Changing pages, hiding the tab or pressing Stop ends dictation; hiding the tab/unmounting also stops microphone capture. Permission, connection and unsupported-language failures show a message rather than repeatedly requesting access.
-
-Example: `add kholo` → `likhna shuru` → `Kabir ne dinner 600 kiya Aman aur Riya ke saath` → `likhna band` → `parse karo` → review/correct with numbered controls → `save karo`. Start voice must be pressed once per session because browser microphone access needs permission. UPI payment confirmation still happens in your payment app, outside this website. The offline Claude stub remains a limited keyword parser; real Claude is recommended for natural Hindi/Hinglish expense interpretation.
-
-Voice tests simulate recognition results without opening a real microphone and cover navigation, dictation, React input updates, disabled/ambiguous controls, confirmation, permission failures and capture cleanup. Actual recognition accuracy depends on your browser, microphone and speech service. See [MDN's SpeechRecognition documentation](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition).
+Hold Fn using Wispr Flow to dictate into normal text fields. The app never intercepts Fn or requests audio access. On Add, Ctrl/Cmd+Enter parses the paragraph; review the cards and explicitly save.
 
 ## Verification
 
@@ -175,10 +150,8 @@ On Add, Repeat WiFi / Doodh / Gas loads the latest matching bill amount and paye
 ## Three researched additions
 
 - **Recover unfinished review:** parsed/edited unsaved cards and original input are checkpointed only in this browser, bound to the group, with a seven-day expiry. Reload → Restore review → inspect → Save all. Restore never posts expenses. Saving/discarding clears it; invalid or unavailable storage is handled. It does not preserve an unparsed textarea or provide offline Claude/server access.
-- **Who should pay next:** say “kaun pay kare” or press the group shortcut. Fresh balances select the largest net debtor, disclose ties and explain the choice. It is an optional suggestion, not a payment or spending target. Settle Up already offers payer suggestions; this adds voice access and explanation.
-- **Spoken briefing:** say “hisaab sunao”. Fresh balances/settlements are checked, shown as text and read with browser speech synthesis. Recognition stops before audio; Start voice cancels narration before restarting commands. Closing, hiding the tab or navigating cancels narration. Unsupported/failed audio retains readable/copyable text.
-
-No new API signatures, credentials, paid services or dependencies were needed. Local checkpoints contain names/expenses/raw text: discard on a shared device. They are last-writer-wins within this browser, not a synchronized backup.
+- **Who should pay next:** press the group shortcut. Fresh balances select the largest net debtor, disclose ties and explain the choice. It is an optional suggestion, not a payment or spending target. Settle Up already offers payer suggestions; this adds a visible explanation.
+  No new API signatures, credentials, paid services or dependencies were needed. Local checkpoints contain names/expenses/raw text: discard on a shared device. They are last-writer-wins within this browser, not a synchronized backup.
 
 See [regression evidence](docs/REGRESSIONS.md), [complete checklist](docs/CHECKLIST.md), [sourced research and eight ideas](docs/RESEARCH.md), and [final report + two-minute demo](docs/FINAL_REPORT.md).
 

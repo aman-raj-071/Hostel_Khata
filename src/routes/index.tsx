@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2, Sparkles, Mic, Square } from "lucide-react";
-import { useContext, useState } from "react";
-import { VoiceContext } from "@/lib/voice-context";
+import { Loader2, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { KhataMascot } from "@/components/KhataMascot";
 import { RecurringTemplates } from "@/components/RecurringTemplates";
 import { toast } from "sonner";
@@ -47,7 +46,6 @@ function AddPage() {
   const [mode, setMode] = useState<ParseMode>("brain-dump");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const voice = useContext(VoiceContext);
   const { data: group } = useGroup();
 
   async function onParse() {
@@ -69,57 +67,17 @@ function AddPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <section className="voice-hero relative overflow-hidden rounded-[2rem] border border-border px-5 py-8 text-center md:py-12">
+      <section className="expense-hero relative overflow-hidden rounded-[2rem] border border-border px-5 py-8 text-center md:py-12">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[.22em] text-primary">
           Less hisaab. More hostel.
         </p>
         <PageTitle
           title="Kya kharcha hua?"
-          subtitle="Bolo ya chat paste karo — hum hisaab bana denge."
+          subtitle="Wispr Flow se bolo, type karo, ya WhatsApp chat paste karo."
         />
-        {voice?.supported ? (
-          <button
-            type="button"
-            onClick={() => voice?.startExpense()}
-            aria-label={voice?.dictating ? "Stop expense dictation" : "Start expense dictation"}
-            aria-pressed={voice?.dictating ?? false}
-            className={`hero-mic mx-auto my-8 grid h-32 w-32 place-items-center rounded-full bg-primary text-primary-foreground md:h-40 md:w-40 ${voice?.active ? "is-listening" : ""}`}
-          >
-            {voice?.dictating ? (
-              <Square size={42} fill="currentColor" />
-            ) : (
-              <Mic className="h-14 w-14" strokeWidth={1.7} />
-            )}
-          </button>
-        ) : (
-          <p className="mx-auto my-8 max-w-sm rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
-            Browser mic unavailable? Wispr Flow se neeche text box mein bolo, ya type/paste karo.
-          </p>
-        )}
-        <p className="font-display text-lg font-semibold">
-          {voice?.active ? "Sun rahe hain…" : "Tap. Bolo. Split ho gaya."}
+        <p className="mt-4 text-sm text-muted-foreground">
+          Review karo, phir save — control tumhare haath mein.
         </p>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-          Hinglish mein kharcha bolo. Review karo, phir save — control tumhare haath mein.
-        </p>
-        {voice?.active && (
-          <div className="mt-5" data-voice-ui>
-            <div
-              className="waveform mx-auto flex h-8 items-center justify-center gap-1"
-              aria-hidden="true"
-            >
-              {Array.from({ length: 17 }, (_, i) => (
-                <span
-                  key={i}
-                  style={{ animationDelay: `${i * 65}ms`, height: `${8 + ((i * 7) % 24)}px` }}
-                />
-              ))}
-            </div>
-            <p aria-live="polite" className="mx-auto mt-3 max-w-lg text-sm">
-              {voice.transcript || "Apna kharcha bolo…"}
-            </p>
-          </div>
-        )}
         <div className="absolute right-3 top-3 hidden rotate-12 opacity-80 sm:block">
           <KhataMascot small />
         </div>
@@ -170,8 +128,19 @@ function AddPage() {
         aria-label="Expense text"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Maine 600 ka dinner kiya, Aman aur Riya ke saath split…"
-        className="min-h-36 rounded-3xl bg-card p-5 text-base shadow-sm"
+        autoFocus
+        onKeyDown={(event) => {
+          if (
+            (event.ctrlKey || event.metaKey) &&
+            event.key === "Enter" &&
+            !event.nativeEvent.isComposing
+          ) {
+            event.preventDefault();
+            if (text.trim() && !loading) void onParse();
+          }
+        }}
+        placeholder="Hold Fn (Wispr Flow) and speak your expenses, or paste WhatsApp chat"
+        className="min-h-64 rounded-3xl bg-card p-5 text-base shadow-sm"
       />
 
       <div className="flex flex-wrap gap-2">

@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { nextPayers, groupBriefing } from "./group-insights";
+import { nextPayers } from "./group-insights";
 const group = {
   id: "g",
   name: "Flat 302",
@@ -41,22 +41,4 @@ it("refuses incomplete, fractional-paise or out-of-sync data", () => {
       { memberId: "r", net: 0 },
     ]),
   ).toThrow();
-  expect(() => groupBriefing(group, balances, [])).toThrow(/changed/);
-});
-it("explains net signs and valid settlements with exact rupees and a non-payment disclaimer", () => {
-  const text = groupBriefing(group, balances, [
-    { fromId: "a", toId: "k", amount: 100.01 },
-    { fromId: "r", toId: "k", amount: 50 },
-  ]);
-  expect(text).toContain("Aman owes 100.01 rupees");
-  expect(text).toContain("Kabir gets back 150.01 rupees");
-  expect(text).toContain("Aman pays Kabir");
-  expect(text).toContain("payment record nahi");
-  expect(
-    groupBriefing(
-      group,
-      balances.map((b) => ({ ...b, net: 0 })),
-      [],
-    ),
-  ).toContain("Sab barabar");
 });
