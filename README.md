@@ -171,3 +171,15 @@ Continue UI work in the [Lovable project](https://lovable.dev/projects/7f5ab845-
 ## Repeat expenses
 
 On Add, Repeat WiFi / Doodh / Gas loads the latest matching bill amount and payer into an unsaved review for today. Current members share it equally; confirm or edit the payer, price and split. Missing history never invents an amount. These are manual templates, not automatic recurring charges.
+
+## Three researched additions
+
+- **Recover unfinished review:** parsed/edited unsaved cards and original input are checkpointed only in this browser, bound to the group, with a seven-day expiry. Reload → Restore review → inspect → Save all. Restore never posts expenses. Saving/discarding clears it; invalid or unavailable storage is handled. It does not preserve an unparsed textarea or provide offline Claude/server access.
+- **Who should pay next:** say “kaun pay kare” or press the group shortcut. Fresh balances select the largest net debtor, disclose ties and explain the choice. It is an optional suggestion, not a payment or spending target. Settle Up already offers payer suggestions; this adds voice access and explanation.
+- **Spoken briefing:** say “hisaab sunao”. Fresh balances/settlements are checked, shown as text and read with browser speech synthesis. Recognition stops before audio; Start voice cancels narration before restarting commands. Closing, hiding the tab or navigating cancels narration. Unsupported/failed audio retains readable/copyable text.
+
+No new API signatures, credentials, paid services or dependencies were needed. Local checkpoints contain names/expenses/raw text: discard on a shared device. They are last-writer-wins within this browser, not a synchronized backup.
+
+See [regression evidence](docs/REGRESSIONS.md), [complete checklist](docs/CHECKLIST.md), [sourced research and eight ideas](docs/RESEARCH.md), and [final report + two-minute demo](docs/FINAL_REPORT.md).
+
+If the threaded frontend test worker stalls under Windows dev-watch load, use: npx vitest run --pool=forks. Backend tests: npm --prefix server test.

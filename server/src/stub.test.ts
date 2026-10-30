@@ -13,6 +13,23 @@ it("keeps every paragraph expense", async () => {
   );
   expect(result.map((e) => e.amount)).toEqual([600, 799, 150]);
 });
+it("keeps conjunction and sentence expenses while preserving itemized clauses", async () => {
+  expect(
+    (
+      await parse(
+        "Kabir ne dinner 600 sab barabar aur Aman ne wifi 799 sab barabar. Riya ne auto 150 sab barabar",
+      )
+    ).map((e) => e.amount),
+  ).toEqual([600, 799, 150]);
+  expect(
+    (await parse("Kabir ne paneer 300 sirf Kabir aur Aman ke liye aur dal 200 sab barabar"))[0]
+      ?.splitType,
+  ).toBe("itemized");
+  expect((await parse("Kabir 100 ya 200 dinner sab barabar"))[0]).toMatchObject({
+    amount: 0,
+    needsClarification: true,
+  });
+});
 it("strips WhatsApp timestamps, follows sender and allocation continuation, ignores noise", async () => {
   const result = await parse(
     "28/10/26, 9:12 pm - Aman: kal wifi bill 799 maine bhar diya\n28/10/26, 9:13 pm - Dev: lol 123 ok\n28/10/26, 9:14 pm - Aman: sab 5 log barabar",

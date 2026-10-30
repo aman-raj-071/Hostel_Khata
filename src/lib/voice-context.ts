@@ -5,5 +5,6 @@ export const VoiceContext = createContext<{
   dictating: boolean;
   supported: boolean;
   transcript: string;
+  stop: () => void;
   startExpense: () => void;
 } | null>(null);

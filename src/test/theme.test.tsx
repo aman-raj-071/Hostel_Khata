@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AppShell } from "@/components/AppShell";
 
 vi.mock("@tanstack/react-router", () => ({
+  useNavigate: () => vi.fn(),
   useLocation: () => ({ pathname: "/" }),
   Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => (
     <a href={to} {...props}>
@@ -12,7 +13,7 @@ vi.mock("@tanstack/react-router", () => ({
   ),
 }));
 vi.mock("@/lib/queries", () => ({
-  useGroup: () => ({ data: { name: "Flat 302" }, isError: false }),
+  useGroup: () => ({ data: { id: "theme-group", name: "Flat 302", members: [] }, isError: false }),
 }));
 vi.mock("@/components/VoiceControl", () => ({
   VoiceControl: ({ children }: { children: ReactNode }) => <>{children}</>,

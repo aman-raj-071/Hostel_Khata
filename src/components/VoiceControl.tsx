@@ -260,6 +260,7 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
         supported,
         transcript: speech.interim || heard,
         startExpense: () => {
+          window.speechSynthesis?.cancel();
           if (dictating) {
             dictation.current = false;
             setDictating(false);
@@ -278,6 +279,7 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
           setMessage("Kharcha bolo. Phir “likhna band”, “parse karo” bolo.");
           if (!active) speech.start(language);
         },
+        stop: () => speech.stop(),
       }}
     >
       <section
@@ -298,6 +300,7 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
                   speech.stop();
                   setMessage("Mic band hai.");
                 } else {
+                  window.speechSynthesis?.cancel();
                   setHeard("");
                   setMessage("Mic permission allow karo, phir command bolo.");
                   speech.start(language);
@@ -383,6 +386,10 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
                 bhejo”.
               </li>
               <li>Settle: “pay karo”, “QR dikhao”. Wrapped: “share karo”, “next”, “previous”.</li>
+              <li>
+                “Kaun pay kare”, “hisaab sunao”, “restore review”. Briefing sunte waqt mic band
+                rahega; phir Start voice dabao.
+              </li>
             </ul>
             <p className="text-xs text-muted-foreground">
               Start par browser mic permission maangega. Browser speech service audio process kar

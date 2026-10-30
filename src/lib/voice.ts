@@ -122,6 +122,12 @@ export function parseVoiceCommand(transcript: string): VoiceCommand {
   const tone = text.match(/^(?:tone|टोन)\s+(polite|filmy|mummy|savage)$/);
   if (tone) return { kind: "click", target: tone[1]! };
   const flow: Record<string, string> = {
+    "kaun pay kare": "who should pay next",
+    "who should pay next": "who should pay next",
+    "hisaab sunao": "listen to group briefing",
+    "read balances": "listen to group briefing",
+    "restore review": "restore review",
+    "review wapas lao": "restore review",
     "discard karo": "discard",
     discard: "discard",
     "whatsapp pe bhejo": "send on whatsapp",

@@ -11,6 +11,8 @@ import {
 import { useGroup } from "@/lib/queries";
 import { ErrorState } from "@/components/States";
 import { VoiceControl } from "@/components/VoiceControl";
+import { DraftRecovery } from "@/components/DraftRecovery";
+import { GroupTools } from "@/components/GroupTools";
 
 const TABS = [
   { to: "/", label: "Add", icon: Mic },
@@ -83,6 +85,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
       <VoiceControl>
         <main className="flex-1 px-4 pb-32 pt-8 md:px-8 md:pt-10">
+          {group && <DraftRecovery key={group.id} groupId={group.id} />}
+          {group && <GroupTools />}
           {groupQuery.isError ? (
             <ErrorState error={groupQuery.error} onRetry={() => groupQuery.refetch()} />
           ) : (

@@ -96,9 +96,7 @@ export function keywordStub(input: ModelInput): { expenses: ParsedExpense[] } {
     }
     const clauses = body.split(
       new RegExp(
-        String.raw`\baur phir\b|;|,\s*(?=[\p{L}]+\s+ne\b)|\s+aur\s+(?=(?:` +
-          foods +
-          String.raw`|wifi|doodh|gas|auto|sabzi)\b)`,
+        String.raw`\baur phir\b|;|[.!]\s+(?=[\p{L}]+\s+ne\b)|,\s*(?=[\p{L}]+\s+ne\b)|\s+(?:aur|and)\s+(?=[\p{L}]+\s+ne\b)|\s+(?:aur|and)\s+(?=(?:chai|dinner|lunch|maggi|pizza|swiggy|biryani|wifi|doodh|gas|auto|sabzi)\b)`,
         "iu",
       ),
     );
@@ -122,7 +120,7 @@ export function keywordStub(input: ModelInput): { expenses: ParsedExpense[] } {
       const allocations = [
         ...text.matchAll(/\b([\p{L}]+)\s+(\d+(?:\.\d{1,2})?)\s*(%|percent)?/gu),
       ].filter((m) => !!matchMember(m[1]!, members));
-      if (!settlement && allocations.length) {
+      if (!settlement && !uncertain && allocations.length) {
         splitType = allocations.some((m) => m[3]) ? "percent" : "exact";
         participants = allocations.map((m) => resolve(m[1]!));
         if (splitType === "percent") {
@@ -154,7 +152,7 @@ export function keywordStub(input: ModelInput): { expenses: ParsedExpense[] } {
         }
       }
       const items = [...text.matchAll(/\b(paneer|dal|rice|roti|naan)\b/gi)];
-      if (!settlement && items.length >= 2) {
+      if (!settlement && !uncertain && items.length >= 2) {
         splitType = "itemized";
         const totals = new Map<string, number>();
         let itemTotal = 0;

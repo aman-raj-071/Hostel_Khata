@@ -6,6 +6,14 @@ let draft: ParsedExpense[] = [];
 let rawText: string | undefined;
 const listeners = new Set<() => void>();
 
+export const getDraft = () => draft;
+export function subscribeDraft(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 export function setDraft(next: ParsedExpense[], source?: string) {
   rawText = next.length ? (source ?? rawText) : undefined;
   draft = next;
@@ -18,10 +26,7 @@ export function getDraftSource(expenses: ParsedExpense[]) {
 
 export function useDraft() {
   return useSyncExternalStore(
-    (l) => {
-      listeners.add(l);
-      return () => listeners.delete(l);
-    },
+    subscribeDraft,
     () => draft,
     () => draft,
   );
