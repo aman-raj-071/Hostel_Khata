@@ -80,11 +80,11 @@ function AddPage() {
           <button
             type="button"
             onClick={() => voice?.startExpense()}
-            aria-label={voice?.active ? "Stop expense dictation" : "Start expense dictation"}
-            aria-pressed={voice?.active ?? false}
+            aria-label={voice?.dictating ? "Stop expense dictation" : "Start expense dictation"}
+            aria-pressed={voice?.dictating ?? false}
             className={`hero-mic mx-auto my-8 grid h-32 w-32 place-items-center rounded-full bg-primary text-primary-foreground md:h-40 md:w-40 ${voice?.active ? "is-listening" : ""}`}
           >
-            {voice?.active ? (
+            {voice?.dictating ? (
               <Square size={42} fill="currentColor" />
             ) : (
               <Mic className="h-14 w-14" strokeWidth={1.7} />

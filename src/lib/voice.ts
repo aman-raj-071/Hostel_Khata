@@ -7,7 +7,15 @@ export type VoiceCommand =
   | { kind: "scroll"; direction: "up" | "down" }
   | {
       kind:
-        "stop" | "help" | "clear" | "dictate" | "end-dictation" | "confirm" | "cancel" | "unknown";
+        | "stop"
+        | "help"
+        | "clear"
+        | "dictate"
+        | "end-dictation"
+        | "confirm"
+        | "cancel"
+        | "back"
+        | "unknown";
     };
 
 export const voiceDigits = (text: string) =>
@@ -94,6 +102,7 @@ const numbers: Record<string, number> = {
 
 export function parseVoiceCommand(transcript: string): VoiceCommand {
   const text = voiceWords(transcript);
+  if (/^(back|go back|wapas|wapas jao|वापस जाओ)$/.test(text)) return { kind: "back" };
   if (/^(stop listening|stop voice|mic band|माइक बंद|माइक बंद करो|voice band|वॉइस बंद)$/.test(text))
     return { kind: "stop" };
   if (/^(stop dictation|end dictation|likhna band|लिखना बंद|लिखना बंद करो)$/.test(text))
@@ -108,7 +117,29 @@ export function parseVoiceCommand(transcript: string): VoiceCommand {
     .replace(/^(?:open|show|go to|kholo|dikhao|खोलो|दिखाओ)\s+/, "")
     .replace(/\s+(?:page|page kholo|kholo|dikhao|खोलो|दिखाओ|पर जाओ)$/, "");
   if (routes[page]) return { kind: "navigate", to: routes[page] };
-  if (/^(help|madad|मदद|voice help|कमांड दिखाओ)$/.test(text)) return { kind: "help" };
+  if (/^(help|madad|मदद|voice help|कमांड दिखाओ|kya bol sakte hain|what can i say)$/.test(text))
+    return { kind: "help" };
+  const tone = text.match(/^(?:tone|टोन)\s+(polite|filmy|mummy|savage)$/);
+  if (tone) return { kind: "click", target: tone[1]! };
+  const flow: Record<string, string> = {
+    "discard karo": "discard",
+    discard: "discard",
+    "whatsapp pe bhejo": "send on whatsapp",
+    "send on whatsapp": "send on whatsapp",
+    "pay karo": "pay via upi",
+    "pay via upi": "pay via upi",
+    "qr dikhao": "show qr",
+    "show qr": "show qr",
+    "share karo": "share png",
+    "share png": "share png",
+    next: "next story",
+    "next story": "next story",
+    "agla card": "next story",
+    previous: "previous story",
+    "previous story": "previous story",
+    "pichla card": "previous story",
+  };
+  if (flow[text]) return { kind: "click", target: flow[text]! };
   if (/^(clear|clear field|saaf karo|साफ करो|मिटाओ)$/.test(text)) return { kind: "clear" };
   if (
     /^(confirm|haan|हाँ|हां|पक्का|confirm karo|कन्फर्म|haan theek hai|han theek hai|हाँ ठीक है|हां ठीक है)$/.test(
@@ -119,9 +150,9 @@ export function parseVoiceCommand(transcript: string): VoiceCommand {
   if (/^(reminder bhejo|send reminder|रिमाइंडर भेजो)$/.test(text))
     return { kind: "click", target: "send reminder" };
   if (/^(cancel|close|रद्द|बंद करो|नहीं|nahi)$/.test(text)) return { kind: "cancel" };
-  if (/^(scroll down|neeche|neeche jao|नीचे|नीचे जाओ)$/.test(text))
+  if (/^(scroll down|scroll neeche|neeche|neeche jao|नीचे|नीचे जाओ)$/.test(text))
     return { kind: "scroll", direction: "down" };
-  if (/^(scroll up|upar|upar jao|ऊपर|ऊपर जाओ)$/.test(text))
+  if (/^(scroll up|scroll upar|upar|upar jao|ऊपर|ऊपर जाओ)$/.test(text))
     return { kind: "scroll", direction: "up" };
   if (/^(parse|parse karo|पार्स|पार्स करो|समझो)$/.test(text))
     return { kind: "click", target: "parse" };

@@ -1,0 +1,38 @@
+# Regression audit — Part A
+
+## Evidence boundary
+
+`git log --all` contains only `988d1d0`, `cfec4fc`, `d2f9453`, `295a71e`, `97b039c`. There is no remote and no original Lovable commit in this checkout. The earliest available baseline is `988d1d0` (already includes the redesign, backend and voice implementation). This report distinguishes proven changes from missing requirements; it does not invent an inaccessible original snapshot.
+
+| Item | Was working before | Current state found | Fix |
+| --- | --- | --- | --- |
+| Global controller | `988d1d0` has `VoiceControl`, `VoiceContext`, `useSpeechRecognition` | Retained, not deleted | Preserve provider on every route and verify final speech events in Chrome |
+| Native mic visibility | Earliest snapshot always renders Start voice | `295a71e` hides it when SpeechRecognition is absent | Keep truthful unsupported fallback; verified native Chrome exposes both constructors. Embedded browsers may not |
+| Hero dictation while global voice is on | Hero shared the existing recognition session | Clicking hero in command mode stopped the entire mic; label falsely claimed dictation was already on | Separate active and dictating state; enter/leave dictation without restarting global recognition |
+| Typing/Wispr ownership | No keyboard/Fn handler existed | Two active dictation sources could compete | Trusted text input pauses browser recognition; synthetic voice writes do not. No keyboard/Fn interception |
+| Dev hot reload | Recognition cleanup aborts the session | Preserved React state could still display Listening after cleanup | Reset idle on effect setup and clear the old recognition reference |
+| Controller while scrolling | Toolbar was relative in earliest available snapshot too | Could scroll off screen; requirement gap rather than a proven deletion | Sticky below the header; live transcript pill remains with controls |
+| Numbered targets and visible-label actions | Present in earliest snapshot | Retained; hidden background excluded in sheets, re-numbered by observers | Browser-tested `click 5` opening the intended QR dialog; retain stale/disabled checks |
+| Back | Not in accessible baseline | Missing | Back/go back/wapas jao |
+| Tone, QR/pay, WhatsApp and story flow commands | Not in accessible baseline | Generic label clicks existed; requested aliases missing | Add tone choices, QR/pay, WhatsApp draft, share, next/previous, discard and Hinglish scroll aliases |
+| Help | Inline guide in baseline | No help sheet; “kya bol sakte hain” missing | Accessible bottom sheet and expanded Hinglish commands |
+| Save/confirmation | Explicit Save all and clarification guard in baseline | Retained; no automatic persistence on parse | Preserve guards and test explicit recognized save/confirmation; ambiguous actions ask for a number |
+| Routes | `/`, `/review`, `/balances`, `/settle`, `/history`, `/report`, `/members` | All retained; `/wrapped` added | Walk every route; preserve all URLs |
+| API functions | `getGroup`, `addMember`, `updateMember`, `removeMember`, `parseText`, `saveExpenses`, `listExpenses`, `updateExpense`, `deleteExpense`, `getBalances`, `getSettlements`, `getReport` | Signatures retained; `generateReminder`, `getWrapped` added | Preserve HTTP boundary and shared contracts |
+| Components | `AppShell`, `ExpenseEditSheet`, `SplitChips`, `States`, `KhataMascot`, `Money`, `VoiceControl` | All retained; `ReminderSheet` added | Preserve design and current behavior |
+| Hooks | `useIsMobile`, `useSpeechRecognition`; `speechConstructor` | Retained | No keyboard/Fn interception; cleanup and permission tests retained |
+| Parser stub limitations | Same simple keyword stub existed in earliest snapshot | Multi-expense paragraphs, exact/percent/itemized support incomplete | Track in Part B, not falsely label as a lost feature |
+
+## Browser evidence
+
+Chrome at localhost exposes SpeechRecognition and is a secure context. A QA-only replacement delivered final recognition events without recording microphone audio. Navigation reached every route, populated history/members/balances, report and Wrapped, and both empty/populated review. No browser console errors were observed. Label clicks opened a reminder, `tone savage` changed its text, `click 5` opened the expected QR dialog, and closing sheets retained recognition. No WhatsApp message or UPI payment was sent.
+
+Wrapped's actual browser renderer produced a valid PNG data URL (1,453,562 characters) for the second card; the download click was intercepted in the QA tab. This verifies rendering, not just the mocked unit export. Real microphone recognition/permission/accuracy remains a manual check.
+
+The hero was verified in Chrome after enabling global commands: it entered dictation in the same session and wrote the recognized expense. Trusted browser text input then paused browser speech, retained the typed value and restored Start voice. Parsing/review/discard of the marked QA text created no stored expense. No Fn/key handler is installed.
+
+## Part A checks
+
+- Full suite: 82 frontend and 42 backend tests passed before the final input guard; the complete voice regression file then passed 63 tests including the guard and cleanup changes (46+ command phrases).
+- TypeScript passed; full lint passed with zero errors and seven pre-existing Fast Refresh warnings; final changed files also passed targeted lint.
+- Production client/SSR build checked. Browser speech-event simulation covered all eight routes, labels/numbers, reminder tones, QR, full parsed review and discard, and actual PNG generation. Raw microphone audio and an external WhatsApp/UPI send were intentionally not exercised.

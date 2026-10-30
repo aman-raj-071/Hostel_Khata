@@ -4,6 +4,13 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { VoiceContext } from "@/lib/voice-context";
 import { Button } from "@/components/ui/button";
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -71,6 +78,11 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
           return;
         }
         switch (command.kind) {
+          case "back":
+            if (window.history.length > 1) window.history.back();
+            else void navigate({ to: "/" });
+            setMessage("Wapas ja rahe hain.");
+            break;
           case "navigate":
             void navigate({ to: command.to }).catch(() =>
               setMessage("Page nahi khula. Dobara try karo."),
@@ -244,11 +256,14 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
     <VoiceContext.Provider
       value={{
         active,
+        dictating,
         supported,
         transcript: speech.interim || heard,
         startExpense: () => {
-          if (active) {
-            speech.stop();
+          if (dictating) {
+            dictation.current = false;
+            setDictating(false);
+            setMessage("Ab commands bolo, jaise “parse karo”.");
             return;
           }
           const field = document.querySelector<HTMLTextAreaElement>(
@@ -261,13 +276,13 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
           setDictating(true);
           setHeard("");
           setMessage("Kharcha bolo. Phir “likhna band”, “parse karo” bolo.");
-          speech.start(language);
+          if (!active) speech.start(language);
         },
       }}
     >
       <section
         data-voice-ui
-        className="voice-toolbar relative z-40 mx-4 mt-4 rounded-2xl border border-border bg-card/80 px-4 py-3 backdrop-blur md:mx-8"
+        className="voice-toolbar sticky top-[69px] z-40 mx-4 mt-4 rounded-2xl border border-border bg-card/95 px-4 py-3 backdrop-blur md:mx-8"
         aria-label="Voice controls"
       >
         <div className="flex items-center gap-2">
@@ -324,13 +339,26 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
                   : message)}
         </p>
         {active && (speech.interim || heard) && (
-          <p className="mt-1 truncate text-xs" aria-label="Last heard">
+          <p
+            className="mt-2 truncate rounded-full bg-secondary px-3 py-2 text-xs"
+            aria-label="Last heard"
+            aria-live="polite"
+          >
             Suna: {speech.interim || heard}
           </p>
         )}
-        {help && (
-          <div className="mt-2 space-y-2 rounded-xl bg-muted p-3 text-sm">
-            <p className="font-semibold">Website ko bolkar chalao</p>
+        <Sheet open={help} onOpenChange={setHelp}>
+          <SheetContent
+            side="bottom"
+            className="mx-auto max-h-[85dvh] max-w-xl overflow-y-auto rounded-t-3xl text-sm"
+          >
+            <SheetHeader>
+              <SheetTitle>Website ko bolkar chalao</SheetTitle>
+              <SheetDescription>
+                Start voice dabao, phir in commands se website chalao. Keyboard aur Fn key apne
+                normal kaam karte hain.
+              </SheetDescription>
+            </SheetHeader>
             <ul className="list-inside list-disc space-y-1">
               <li>
                 “add kholo”, “balances kholo”, “settle kholo”, “history kholo”, “report kholo”,
@@ -349,14 +377,20 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
                 karo” → review → “save karo”.
               </li>
               <li>“search chai”, “neeche jao”, “upar jao”, “confirm”, “cancel”, “mic band”.</li>
+              <li>“wapas jao”, “discard karo”, “scroll neeche”, “scroll upar”.</li>
+              <li>
+                Reminder: “tone savage”, “tone polite”, “tone filmy”, “tone mummy”, “whatsapp pe
+                bhejo”.
+              </li>
+              <li>Settle: “pay karo”, “QR dikhao”. Wrapped: “share karo”, “next”, “previous”.</li>
             </ul>
             <p className="text-xs text-muted-foreground">
               Start par browser mic permission maangega. Browser speech service audio process kar
               sakti hai; internet zaroori ho sakta hai. Tab hide hone par mic band hota hai. Wispr
               Flow/type karna bhi chalega. UPI ka final payment apni UPI app mein confirm karo.
             </p>
-          </div>
-        )}
+          </SheetContent>
+        </Sheet>
       </section>
       {children}
       {active && (

@@ -97,6 +97,33 @@ describe("Hindi, Hinglish and English voice commands", () => {
     ["लिखना बंद", { kind: "end-dictation" }],
     ["mic band", { kind: "stop" }],
     ["delete everything now", { kind: "unknown" }],
+    ["open home", { kind: "navigate", to: "/" }],
+    ["open report", { kind: "navigate", to: "/report" }],
+    ["history dikhao", { kind: "navigate", to: "/history" }],
+    ["settle up kholo", { kind: "navigate", to: "/settle" }],
+    ["wrapped dikhao", { kind: "navigate", to: "/wrapped" }],
+    ["wapas jao", { kind: "back" }],
+    ["go back", { kind: "back" }],
+    ["back", { kind: "back" }],
+    ["discard karo", { kind: "click", target: "discard" }],
+    ["scroll neeche", { kind: "scroll", direction: "down" }],
+    ["scroll upar", { kind: "scroll", direction: "up" }],
+    ["tone savage", { kind: "click", target: "savage" }],
+    ["tone polite", { kind: "click", target: "polite" }],
+    ["tone mummy", { kind: "click", target: "mummy" }],
+    ["tone filmy", { kind: "click", target: "filmy" }],
+    ["reminder bhejo", { kind: "click", target: "send reminder" }],
+    ["whatsapp pe bhejo", { kind: "click", target: "send on whatsapp" }],
+    ["pay karo", { kind: "click", target: "pay via upi" }],
+    ["QR dikhao", { kind: "click", target: "show qr" }],
+    ["share karo", { kind: "click", target: "share png" }],
+    ["next", { kind: "click", target: "next story" }],
+    ["previous", { kind: "click", target: "previous story" }],
+    ["kya bol sakte hain", { kind: "help" }],
+    ["haan theek hai", { kind: "confirm" }],
+    ["clear", { kind: "clear" }],
+    ["click Parse", { kind: "click", target: "parse" }],
+    ["likho chai 100", { kind: "write", text: "chai 100" }],
   ])("understands %s", (text, expected) => {
     expect(parseVoiceCommand(text as string)).toEqual(expected);
   });
@@ -185,6 +212,58 @@ describe("voice targets reuse existing controls", () => {
 });
 
 describe("speech recognition and hands-free operation", () => {
+  it("pauses browser speech on trusted typing/Wispr input, without intercepting keyboard keys", () => {
+    const listen = vi.spyOn(document, "addEventListener");
+    render(
+      <>
+        <VoiceControl />
+        <textarea aria-label="Expense text" />
+      </>,
+    );
+    const mic = start();
+    const listener = listen.mock.calls.find(([name]) => name === "input")![1] as EventListener;
+    act(() =>
+      listener({
+        isTrusted: true,
+        target: screen.getByLabelText("Expense text"),
+      } as unknown as Event),
+    );
+    expect(mic.abort).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Start voice" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Typing/Wispr");
+  });
+  it("switches from global commands to hero dictation without stopping the mic", () => {
+    const parse = vi.fn();
+    function Hero() {
+      const voice = useContext(VoiceContext);
+      const [value, setValue] = useState("");
+      return (
+        <>
+          <button onClick={() => voice?.startExpense()}>Hero mic</button>
+          <textarea
+            aria-label="Expense text"
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+          />
+          <button onClick={parse}>Parse</button>
+        </>
+      );
+    }
+    render(
+      <VoiceControl>
+        <Hero />
+      </VoiceControl>,
+    );
+    const mic = start();
+    fireEvent.click(screen.getByText("Hero mic"));
+    expect(MockRecognition.instances).toHaveLength(1);
+    act(() => mic.say("Dinner 600 sabke liye"));
+    expect(screen.getByLabelText("Expense text")).toHaveValue("Dinner 600 sabke liye");
+    fireEvent.click(screen.getByText("Hero mic"));
+    act(() => mic.say("parse karo"));
+    expect(parse).toHaveBeenCalledTimes(1);
+    expect(mic.abort).not.toHaveBeenCalled();
+  });
   it("recognizes Wrapped, reminder and natural confirmation commands", () => {
     expect(parseVoiceCommand("wrapped dikhao")).toEqual({ kind: "navigate", to: "/wrapped" });
     expect(parseVoiceCommand("settle up kholo")).toEqual({ kind: "navigate", to: "/settle" });

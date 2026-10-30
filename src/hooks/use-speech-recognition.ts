@@ -128,15 +128,37 @@ export function useSpeechRecognition(onCommand: (text: string) => void) {
   );
 
   useEffect(() => {
+    if (!wanted.current) setPhase("idle");
     const hidden = () => {
       if (document.visibilityState === "hidden") stop();
     };
+    const typing = (event: Event) => {
+      if (!wanted.current || !event.isTrusted) return;
+      const field = event.target;
+      if (
+        !(field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) ||
+        field.closest("[data-voice-ui]")
+      )
+        return;
+      if (
+        field instanceof HTMLInputElement &&
+        ["checkbox", "radio", "button", "submit", "range"].includes(field.type)
+      )
+        return;
+      stop();
+      setError(
+        "Typing/Wispr input mili, browser mic pause kiya. Commands ke liye Start voice dabao.",
+      );
+    };
     document.addEventListener("visibilitychange", hidden);
+    document.addEventListener("input", typing);
     return () => {
       document.removeEventListener("visibilitychange", hidden);
+      document.removeEventListener("input", typing);
       wanted.current = false;
       clearTimeout(restart.current);
       const current = recognition.current;
+      recognition.current = null;
       if (current) {
         current.onstart = current.onresult = current.onerror = current.onend = null;
         current.abort();
