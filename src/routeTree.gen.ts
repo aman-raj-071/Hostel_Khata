@@ -16,6 +16,7 @@ import { Route as MembersRouteImport } from './routes/members'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SettleRouteImport } from './routes/settle'
+import { Route as WrappedRouteImport } from './routes/wrapped'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +53,11 @@ const SettleRoute = SettleRouteImport.update({
   path: '/settle',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WrappedRoute = WrappedRouteImport.update({
+  id: '/wrapped',
+  path: '/wrapped',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/report': typeof ReportRoute
   '/review': typeof ReviewRoute
   '/settle': typeof SettleRoute
+  '/wrapped': typeof WrappedRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/report': typeof ReportRoute
   '/review': typeof ReviewRoute
   '/settle': typeof SettleRoute
+  '/wrapped': typeof WrappedRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/report': typeof ReportRoute
   '/review': typeof ReviewRoute
   '/settle': typeof SettleRoute
+  '/wrapped': typeof WrappedRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/report'
     | '/review'
     | '/settle'
+    | '/wrapped'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/report'
     | '/review'
     | '/settle'
+    | '/wrapped'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/report'
     | '/review'
     | '/settle'
+    | '/wrapped'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +131,7 @@ export interface RootRouteChildren {
   ReportRoute: typeof ReportRoute
   ReviewRoute: typeof ReviewRoute
   SettleRoute: typeof SettleRoute
+  WrappedRoute: typeof WrappedRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/wrapped': {
+      id: '/wrapped'
+      path: '/wrapped'
+      fullPath: '/wrapped'
+      preLoaderRoute: typeof WrappedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportRoute: ReportRoute,
   ReviewRoute: ReviewRoute,
   SettleRoute: SettleRoute,
+  WrappedRoute: WrappedRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

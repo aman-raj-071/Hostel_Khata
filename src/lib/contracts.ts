@@ -128,3 +128,21 @@ export const reminderSchema = z
       .refine((value) => value.split(/\r?\n/).length <= 3, "Use at most three lines"),
   })
   .strict();
+
+export const wrappedSchema = z
+  .object({
+    total: z.number().finite().nonnegative(),
+    awards: z
+      .array(
+        z.object({
+          title: z.string().min(1).max(80),
+          memberId: idSchema.nullable(),
+          value: z.number().finite().nonnegative(),
+          emoji: z.string().max(20),
+          line: z.string().trim().min(1).max(240),
+        }),
+      )
+      .max(5),
+    biggestExpense: expenseSchema.nullable(),
+  })
+  .strict();

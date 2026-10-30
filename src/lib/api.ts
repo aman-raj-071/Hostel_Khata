@@ -10,6 +10,7 @@ import type {
   Settlement,
   Reminder,
   ReminderInput,
+  Wrapped,
 } from "./types";
 import { z } from "zod";
 import {
@@ -21,6 +22,7 @@ import {
   reportSchema,
   settlementsSchema,
   reminderSchema,
+  wrappedSchema,
 } from "./contracts";
 import { getDraftSource } from "./draft";
 
@@ -109,4 +111,7 @@ export async function getReport(month: string): Promise<Report> {
 
 export async function generateReminder(input: ReminderInput): Promise<Reminder> {
   return request("/api/reminder", reminderSchema, "POST", input);
+}
+export async function getWrapped(month: string): Promise<Wrapped> {
+  return request(`/api/wrapped?month=${encodeURIComponent(month)}`, wrappedSchema);
 }

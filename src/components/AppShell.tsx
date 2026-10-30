@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { BarChart3, History, Menu, Mic, Scale, Users, Wallet } from "lucide-react";
+import { BarChart3, History, Menu, Mic, Scale, Users, Wallet, Sparkles } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Sun, Moon } from "lucide-react";
 import {
@@ -18,6 +18,7 @@ const TABS = [
   { to: "/settle", label: "Settle", icon: Wallet },
   { to: "/history", label: "History", icon: History },
   { to: "/report", label: "Report", icon: BarChart3 },
+  { to: "/wrapped", label: "Wrapped", icon: Sparkles },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -96,7 +97,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         aria-label="Main navigation"
         className="fixed inset-x-3 bottom-3 z-30 mx-auto max-w-2xl rounded-3xl border border-border bg-card/95 p-1 shadow-2xl backdrop-blur-xl"
       >
-        <ul className="grid grid-cols-5">
+        <ul className="grid grid-cols-6">
           {TABS.map(({ to, label, icon: Icon }) => {
             const active =
               to === "/" ? pathname === "/" || pathname === "/review" : pathname.startsWith(to);
@@ -108,7 +109,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     active ? "text-primary" : "text-muted-foreground"
                   }`}
                 >
-                  <span className={`rounded-full px-4 py-1 ${active ? "bg-secondary" : ""}`}>
+                  <span className={`rounded-full px-3 py-1 ${active ? "bg-secondary" : ""}`}>
                     <Icon className="h-5 w-5" />
                   </span>
                   {label}

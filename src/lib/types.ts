@@ -67,3 +67,16 @@ export interface ReminderInput {
 export interface Reminder {
   message: string;
 }
+
+export interface WrappedAward {
+  title: string;
+  memberId: string | null;
+  value: number;
+  emoji: string;
+  line: string;
+}
+export interface Wrapped {
+  total: number;
+  awards: WrappedAward[];
+  biggestExpense: Expense | null;
+}

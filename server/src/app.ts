@@ -6,6 +6,7 @@ import { HttpError } from "./errors.js";
 import { createService, memberDto } from "./service.js";
 import { parseExpenses, indiaToday, type Completion } from "./parser.js";
 import { generateReminder } from "./reminder.js";
+import { createWrappedCache } from "./wrapped.js";
 import {
   z,
   ZodError,
@@ -25,6 +26,7 @@ import {
   settlementsSchema,
   reminderInput,
   reminderSchema,
+  wrappedSchema,
 } from "./schemas.js";
 
 export function createApp(
@@ -38,6 +40,7 @@ export function createApp(
 ) {
   const app = express();
   const service = createService(db, options.groupCode);
+  const wrapped = createWrappedCache();
   app.disable("x-powered-by");
   if (process.env.TRUST_PROXY_HOPS) app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS));
   const origins = (process.env.CORS_ORIGIN || "http://127.0.0.1:8080,http://localhost:8080")
@@ -126,6 +129,21 @@ export function createApp(
       reportSchema,
       await service.report(monthSchema.parse(req.query.month ?? indiaToday().slice(0, 7))),
     ),
+  );
+  app.get(
+    "/api/wrapped",
+    rateLimit({
+      windowMs: 60000,
+      limit: 20,
+      standardHeaders: "draft-8",
+      legacyHeaders: false,
+      message: { error: "Too many Wrapped requests. Please wait a minute." },
+    }),
+    async (req, res) => {
+      const month = monthSchema.parse(req.query.month ?? indiaToday().slice(0, 7));
+      const group = await service.getGroup();
+      send(res, wrappedSchema, await wrapped(group.id, month, group.members, await service.list()));
+    },
   );
   app.post("/api/members", async (req, res) =>
     send(res, memberSchema, await service.addMember(memberInput.parse(req.body)), 201),

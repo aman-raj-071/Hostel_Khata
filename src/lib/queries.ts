@@ -9,6 +9,8 @@ export const useExpenses = (f: Parameters<typeof api.listExpenses>[0] & object) 
   useQuery({ queryKey: ["expenses", f], queryFn: () => api.listExpenses(f) });
 export const useReport = (month: string) =>
   useQuery({ queryKey: ["report", month], queryFn: () => api.getReport(month) });
+export const useWrapped = (month: string) =>
+  useQuery({ queryKey: ["wrapped", month], queryFn: () => api.getWrapped(month), retry: false });
 
 /** Call after any write so every screen refetches. */
 export function useRefreshAll() {

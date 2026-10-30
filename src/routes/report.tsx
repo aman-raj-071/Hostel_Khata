@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
@@ -75,6 +75,14 @@ function ReportPage() {
   return (
     <div className="space-y-4">
       <PageTitle title="Report" />
+      <Link to="/wrapped" className="block rounded-3xl border border-primary/30 bg-primary/10 p-5">
+        <span className="font-display text-xl font-bold text-primary">
+          ✨ Your Hostel Wrapped is here
+        </span>
+        <span className="mt-1 block text-sm text-muted-foreground">
+          Your gang's month, in stories and legendary awards →
+        </span>
+      </Link>
       <Select value={month} onValueChange={setMonth}>
         <SelectTrigger aria-label="Report month" className="h-12 rounded-xl">
           <SelectValue />
