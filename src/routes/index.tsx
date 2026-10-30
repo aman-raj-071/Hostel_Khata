@@ -76,19 +76,25 @@ function AddPage() {
           title="Kya kharcha hua?"
           subtitle="Bolo ya chat paste karo — hum hisaab bana denge."
         />
-        <button
-          type="button"
-          onClick={() => voice?.startExpense()}
-          aria-label={voice?.active ? "Stop expense dictation" : "Start expense dictation"}
-          aria-pressed={voice?.active ?? false}
-          className={`hero-mic mx-auto my-8 grid h-32 w-32 place-items-center rounded-full bg-primary text-primary-foreground md:h-40 md:w-40 ${voice?.active ? "is-listening" : ""}`}
-        >
-          {voice?.active ? (
-            <Square size={42} fill="currentColor" />
-          ) : (
-            <Mic className="h-14 w-14" strokeWidth={1.7} />
-          )}
-        </button>
+        {voice?.supported ? (
+          <button
+            type="button"
+            onClick={() => voice?.startExpense()}
+            aria-label={voice?.active ? "Stop expense dictation" : "Start expense dictation"}
+            aria-pressed={voice?.active ?? false}
+            className={`hero-mic mx-auto my-8 grid h-32 w-32 place-items-center rounded-full bg-primary text-primary-foreground md:h-40 md:w-40 ${voice?.active ? "is-listening" : ""}`}
+          >
+            {voice?.active ? (
+              <Square size={42} fill="currentColor" />
+            ) : (
+              <Mic className="h-14 w-14" strokeWidth={1.7} />
+            )}
+          </button>
+        ) : (
+          <p className="mx-auto my-8 max-w-sm rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
+            Browser mic unavailable? Wispr Flow se neeche text box mein bolo, ya type/paste karo.
+          </p>
+        )}
         <p className="font-display text-lg font-semibold">
           {voice?.active ? "Sun rahe hain…" : "Tap. Bolo. Split ho gaya."}
         </p>

@@ -1,5 +1,5 @@
 export type VoiceRoute =
-  "/" | "/balances" | "/settle" | "/history" | "/report" | "/members" | "/review";
+  "/" | "/balances" | "/settle" | "/history" | "/report" | "/members" | "/review" | "/wrapped";
 export type VoiceCommand =
   | { kind: "navigate"; to: VoiceRoute }
   | { kind: "click"; target: string }
@@ -49,6 +49,9 @@ const routes: Record<string, VoiceRoute> = {
   सदस्य: "/members",
   review: "/review",
   रिव्यू: "/review",
+  wrapped: "/wrapped",
+  "hostel wrapped": "/wrapped",
+  रैप्ड: "/wrapped",
 };
 const numbers: Record<string, number> = {
   one: 1,
@@ -107,7 +110,14 @@ export function parseVoiceCommand(transcript: string): VoiceCommand {
   if (routes[page]) return { kind: "navigate", to: routes[page] };
   if (/^(help|madad|मदद|voice help|कमांड दिखाओ)$/.test(text)) return { kind: "help" };
   if (/^(clear|clear field|saaf karo|साफ करो|मिटाओ)$/.test(text)) return { kind: "clear" };
-  if (/^(confirm|haan|हाँ|हां|पक्का|confirm karo|कन्फर्म)$/.test(text)) return { kind: "confirm" };
+  if (
+    /^(confirm|haan|हाँ|हां|पक्का|confirm karo|कन्फर्म|haan theek hai|han theek hai|हाँ ठीक है|हां ठीक है)$/.test(
+      text,
+    )
+  )
+    return { kind: "confirm" };
+  if (/^(reminder bhejo|send reminder|रिमाइंडर भेजो)$/.test(text))
+    return { kind: "click", target: "send reminder" };
   if (/^(cancel|close|रद्द|बंद करो|नहीं|nahi)$/.test(text)) return { kind: "cancel" };
   if (/^(scroll down|neeche|neeche jao|नीचे|नीचे जाओ)$/.test(text))
     return { kind: "scroll", direction: "down" };

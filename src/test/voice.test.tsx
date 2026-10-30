@@ -185,6 +185,34 @@ describe("voice targets reuse existing controls", () => {
 });
 
 describe("speech recognition and hands-free operation", () => {
+  it("recognizes Wrapped, reminder and natural confirmation commands", () => {
+    expect(parseVoiceCommand("wrapped dikhao")).toEqual({ kind: "navigate", to: "/wrapped" });
+    expect(parseVoiceCommand("settle up kholo")).toEqual({ kind: "navigate", to: "/settle" });
+    expect(parseVoiceCommand("reminder bhejo")).toEqual({ kind: "click", target: "send reminder" });
+    expect(parseVoiceCommand("haan theek hai")).toEqual({ kind: "confirm" });
+  });
+  it("confirms the visible review save but cannot bypass a disabled confirmation", () => {
+    const save = vi.fn();
+    const view = render(
+      <>
+        <VoiceControl />
+        <button onClick={save} disabled>
+          Save all
+        </button>
+      </>,
+    );
+    const mic = start();
+    act(() => mic.say("haan theek hai"));
+    expect(save).not.toHaveBeenCalled();
+    view.rerender(
+      <>
+        <VoiceControl />
+        <button onClick={save}>Save all</button>
+      </>,
+    );
+    act(() => mic.say("haan theek hai"));
+    expect(save).toHaveBeenCalledTimes(1);
+  });
   it("starts hero dictation in the same recognition session and preserves explicit parse", () => {
     const parse = vi.fn();
     function Hero() {
@@ -359,7 +387,7 @@ describe("speech recognition and hands-free operation", () => {
     vi.stubGlobal("SpeechRecognition", undefined);
     vi.stubGlobal("webkitSpeechRecognition", undefined);
     render(<VoiceControl />);
-    fireEvent.click(screen.getByRole("button", { name: "Start voice" }));
+    expect(screen.queryByRole("button", { name: "Start voice" })).not.toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("available nahi hai");
   });
 });

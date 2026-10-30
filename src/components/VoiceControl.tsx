@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
+import { speechConstructor, useSpeechRecognition } from "@/hooks/use-speech-recognition";
 import {
   activateVoiceTarget,
   findVoiceTarget,
@@ -27,6 +27,10 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [language, setLanguage] = useState("en-IN");
+  const [supported, setSupported] = useState(false);
+  useEffect(() => {
+    setSupported(Boolean(speechConstructor()));
+  }, []);
   const [help, setHelp] = useState(false);
   const [message, setMessage] = useState("Bolo: “balances kholo”, “click 5”, “likho …”");
   const [heard, setHeard] = useState("");
@@ -127,7 +131,7 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
             const scope = dialog.length ? dialog : all;
             const pattern =
               command.kind === "confirm"
-                ? /^(yes payment completed|delete|remove member|confirm payer amount and split)$/
+                ? /^(yes payment completed|delete|remove member|confirm payer amount and split|save all|save changes)$/
                 : /^(cancel|close|discard)$/;
             const matches = scope.filter((t) => pattern.test(voiceWords(t.label)));
             if (matches.length !== 1)
@@ -240,6 +244,7 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
     <VoiceContext.Provider
       value={{
         active,
+        supported,
         transcript: speech.interim || heard,
         startExpense: () => {
           if (active) {
@@ -266,27 +271,29 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
         aria-label="Voice controls"
       >
         <div className="flex items-center gap-2">
-          <Button
-            variant={active ? "destructive" : "outline"}
-            className="min-h-11 shrink-0 rounded-xl"
-            aria-pressed={active}
-            onClick={() => {
-              dictation.current = false;
-              setDictating(false);
-              if (active) {
-                speech.stop();
-                setMessage("Mic band hai.");
-              } else {
-                setHeard("");
-                setMessage("Mic permission allow karo, phir command bolo.");
-                speech.start(language);
-              }
-            }}
-          >
-            {active ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            {active ? "Stop voice" : "Start voice"}
-          </Button>
-          <Select value={language} onValueChange={setLanguage} disabled={active}>
+          {supported && (
+            <Button
+              variant={active ? "destructive" : "outline"}
+              className="min-h-11 shrink-0 rounded-xl"
+              aria-pressed={active}
+              onClick={() => {
+                dictation.current = false;
+                setDictating(false);
+                if (active) {
+                  speech.stop();
+                  setMessage("Mic band hai.");
+                } else {
+                  setHeard("");
+                  setMessage("Mic permission allow karo, phir command bolo.");
+                  speech.start(language);
+                }
+              }}
+            >
+              {active ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              {active ? "Stop voice" : "Start voice"}
+            </Button>
+          )}
+          <Select value={language} onValueChange={setLanguage} disabled={active || !supported}>
             <SelectTrigger className="h-11 min-w-0 flex-1 rounded-xl" aria-label="Voice language">
               <SelectValue />
             </SelectTrigger>
@@ -307,12 +314,14 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
           </Button>
         </div>
         <p role="status" aria-live="polite" className="mt-1 text-xs text-muted-foreground">
-          {speech.error ||
-            (speech.phase === "starting"
-              ? "Mic connect ho raha hai…"
-              : active
-                ? `${dictating ? "Dictation on" : "Listening"} · ${message}`
-                : message)}
+          {!supported
+            ? "Voice recognition available nahi hai. Wispr Flow ya text box se kharcha likho."
+            : speech.error ||
+              (speech.phase === "starting"
+                ? "Mic connect ho raha hai…"
+                : active
+                  ? `${dictating ? "Dictation on" : "Listening"} · ${message}`
+                  : message)}
         </p>
         {active && (speech.interim || heard) && (
           <p className="mt-1 truncate text-xs" aria-label="Last heard">
@@ -326,6 +335,10 @@ export function VoiceControl({ children }: { children?: ReactNode }) {
               <li>
                 “add kholo”, “balances kholo”, “settle kholo”, “history kholo”, “report kholo”,
                 “members kholo”, “review kholo”
+              </li>
+              <li>
+                “wrapped dikhao”, “settle up kholo”, “reminder bhejo”, “haan theek hai”. Ek se zyada
+                reminders hon toh button ka number bolo.
               </li>
               <li>
                 Numbered control ke liye “click 5”; field par “click 5”, phir “likho 500”. Dropdown
