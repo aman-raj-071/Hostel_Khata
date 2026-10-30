@@ -56,3 +56,14 @@ export interface Report {
 }
 
 export type ParseMode = "brain-dump" | "chat-import";
+
+export type ReminderTone = "polite" | "filmy" | "mummy" | "savage";
+export interface ReminderInput {
+  fromId: string;
+  toId: string;
+  amount: number;
+  tone: ReminderTone;
+}
+export interface Reminder {
+  message: string;
+}

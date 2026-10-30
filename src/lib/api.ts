@@ -8,6 +8,8 @@ import type {
   ParsedExpense,
   Report,
   Settlement,
+  Reminder,
+  ReminderInput,
 } from "./types";
 import { z } from "zod";
 import {
@@ -18,6 +20,7 @@ import {
   parsedResponseSchema,
   reportSchema,
   settlementsSchema,
+  reminderSchema,
 } from "./contracts";
 import { getDraftSource } from "./draft";
 
@@ -102,4 +105,8 @@ export async function getSettlements(): Promise<Settlement[]> {
 }
 export async function getReport(month: string): Promise<Report> {
   return request(`/api/report?month=${encodeURIComponent(month)}`, reportSchema);
+}
+
+export async function generateReminder(input: ReminderInput): Promise<Reminder> {
+  return request("/api/reminder", reminderSchema, "POST", input);
 }

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Avatar, EmptyState, ErrorState, ListSkeleton, PageTitle } from "@/components/States";
 import { Money } from "@/components/Money";
+import { ReminderSheet } from "@/components/ReminderSheet";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,6 +44,9 @@ function SettlePage() {
   const [recording, setRecording] = useState(false);
   const [payment, setPayment] = useState<{ from: Member; to: Member; amount: number } | null>(null);
   const [qr, setQr] = useState<{ link: string; to: Member; amount: number } | null>(null);
+  const [reminder, setReminder] = useState<{ from: Member; to: Member; amount: number } | null>(
+    null,
+  );
   const find = (id: string) => group?.members.find((m) => m.id === id);
 
   return (
@@ -118,6 +122,14 @@ function SettlePage() {
                   )}
                 </div>
                 <Button
+                  aria-label={`Send reminder ${from.name} to ${to.name}`}
+                  variant="secondary"
+                  className="mt-3 min-h-11 w-full rounded-xl"
+                  onClick={() => setReminder({ from, to, amount: s.amount })}
+                >
+                  Send reminder
+                </Button>
+                <Button
                   aria-label={`Record payment ${from.name} to ${to.name}`}
                   variant="outline"
                   className="mt-2 min-h-11 w-full rounded-xl"
@@ -130,6 +142,7 @@ function SettlePage() {
           })}
         </div>
       )}
+      {reminder && <ReminderSheet {...reminder} onClose={() => setReminder(null)} />}
       <Dialog open={!!qr} onOpenChange={(o) => !o && setQr(null)}>
         <DialogContent className="max-w-sm rounded-3xl">
           <DialogHeader>

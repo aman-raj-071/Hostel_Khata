@@ -108,3 +108,23 @@ export const reportSchema = z.object({
   ),
   summaryText: z.string(),
 });
+
+export const reminderInput = z
+  .object({
+    fromId: idSchema,
+    toId: idSchema,
+    amount: moneySchema.refine((value) => value > 0, "Amount must be positive"),
+    tone: z.enum(["polite", "filmy", "mummy", "savage"]),
+  })
+  .strict()
+  .refine((value) => value.fromId !== value.toId, "Choose two different members");
+export const reminderSchema = z
+  .object({
+    message: z
+      .string()
+      .trim()
+      .min(1)
+      .max(600)
+      .refine((value) => value.split(/\r?\n/).length <= 3, "Use at most three lines"),
+  })
+  .strict();

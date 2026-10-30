@@ -7,12 +7,27 @@ import {
   listExpenses,
   parseText,
   saveExpenses,
+  generateReminder,
 } from "@/lib/api";
 import { setDraft } from "@/lib/draft";
 import type { ParsedExpense } from "@/lib/types";
 
 afterEach(() => vi.unstubAllGlobals());
 describe("HTTP data boundary", () => {
+  it("posts reminder data and validates the response", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({ message: "Aman, ₹340 Riya ko bhej do. UPI available hai." }),
+      )
+      .mockResolvedValueOnce(Response.json({ message: "" }));
+    vi.stubGlobal("fetch", fetcher);
+    const input = { fromId: "a", toId: "r", amount: 340, tone: "polite" as const };
+    expect((await generateReminder(input)).message).toContain("₹340");
+    expect(fetcher.mock.calls[0]![0]).toContain("/api/reminder");
+    expect(JSON.parse(fetcher.mock.calls[0]![1].body)).toEqual(input);
+    await expect(generateReminder(input)).rejects.toThrow("unexpected data");
+  });
   it("preserves signatures and sends filters and JSON bodies", async () => {
     const fetcher = vi
       .fn()

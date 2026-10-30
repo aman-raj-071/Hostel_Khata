@@ -5,6 +5,7 @@ import type { PrismaClient } from "@prisma/client";
 import { HttpError } from "./errors.js";
 import { createService, memberDto } from "./service.js";
 import { parseExpenses, indiaToday, type Completion } from "./parser.js";
+import { generateReminder } from "./reminder.js";
 import {
   z,
   ZodError,
@@ -22,11 +23,18 @@ import {
   reportSchema,
   saveInput,
   settlementsSchema,
+  reminderInput,
+  reminderSchema,
 } from "./schemas.js";
 
 export function createApp(
   db: PrismaClient,
-  options: { complete?: Completion; groupCode?: string; parseLimit?: number } = {},
+  options: {
+    complete?: Completion;
+    groupCode?: string;
+    parseLimit?: number;
+    reminderLimit?: number;
+  } = {},
 ) {
   const app = express();
   const service = createService(db, options.groupCode);
@@ -77,6 +85,21 @@ export function createApp(
     const body = saveInput.parse(req.body);
     send(res, z.array(expenseSchema), await service.save(body.expenses, body.rawText), 201);
   });
+  app.post(
+    "/api/reminder",
+    rateLimit({
+      windowMs: 60000,
+      limit: options.reminderLimit ?? 10,
+      standardHeaders: "draft-8",
+      legacyHeaders: false,
+      message: { error: "Too many reminder requests. Please wait a minute." },
+    }),
+    async (req, res) => {
+      const input = reminderInput.parse(req.body);
+      const group = await service.group();
+      send(res, reminderSchema, await generateReminder(input, group.members.map(memberDto)));
+    },
+  );
   app.get("/api/expenses", async (req, res) =>
     send(res, z.array(expenseSchema), await service.list(filtersSchema.parse(req.query))),
   );
