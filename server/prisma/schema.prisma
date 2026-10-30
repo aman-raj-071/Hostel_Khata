@@ -10,6 +10,10 @@ model Group {
   id        String   @id @default(cuid())
   name      String
   code      String   @unique
+  createdBy String? @map("created_by")
+  requireApproval Boolean @default(true) @map("require_approval")
+  expiresAt DateTime? @map("expires_at")
+  owner User? @relation("GroupOwner", fields: [createdBy], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now()) @map("created_at")
   members   Member[]
   expenses  Expense[]
@@ -19,12 +23,18 @@ model Group {
 model Member {
   id       String @id @default(cuid())
   groupId  String @map("group_id")
+  userId String? @map("user_id")
+  role String @default("member")
+  status String @default("active")
+  joinedAt DateTime @default(now()) @map("joined_at")
+  user User? @relation(fields: [userId], references: [id], onDelete: Restrict)
   name     String
   upiId    String? @map("upi_id")
   group    Group @relation(fields: [groupId], references: [id], onDelete: Restrict)
   payments Expense[]
   shares   ExpenseShare[]
   @@unique([groupId, name])
+  @@unique([groupId, userId])
   @@index([groupId])
   @@map("members")
 }
@@ -57,4 +67,37 @@ model ExpenseShare {
   @@unique([expenseId, memberId])
   @@index([memberId])
   @@map("expense_shares")
+}
+
+model User {
+  id String @id @default(cuid())
+  name String
+  email String @unique
+  passwordHash String? @map("password_hash")
+  upiId String? @map("upi_id")
+  color String
+  createdAt DateTime @default(now()) @map("created_at")
+  demoExpiresAt DateTime? @map("demo_expires_at")
+  groups Group[] @relation("GroupOwner")
+  memberships Member[]
+  sessions Session[]
+  @@index([demoExpiresAt])
+  @@map("users")
+}
+model Session {
+  tokenHash String @id @map("token_hash")
+  userId String @map("user_id")
+  activeGroupId String? @map("active_group_id")
+  expiresAt DateTime @map("expires_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([expiresAt])
+  @@index([userId])
+  @@map("sessions")
+}
+model AuthAttempt {
+  key String @id
+  failures Int @default(0)
+  windowStart DateTime @map("window_start")
+  lockedUntil DateTime? @map("locked_until")
+  @@map("auth_attempts")
 }

@@ -1,6 +1,8 @@
+> Current account upgrade: app endpoints now require a database session and active group membership. Use **Try demo** for an isolated 24-hour Flat 302 sandbox. Old shared seed data is preserved but never automatically assigned to new users. Group creation/invites and two-sided confirmations are the next implementation phases.
+
 # Hostel Khata
 
-For hostel and flatmate groups who lose shared chai, food, bills and repayments in chat noise. Speak a Hinglish expense, review the split and confirm it; see balances without login. Includes WhatsApp imports, paise rounding, UPI/QR, four reminder tones, reports and shareable Hostel Wrapped stories.
+For hostel and flatmate groups who lose shared chai, food, bills and repayments in chat noise. Speak a Hinglish expense, review the split and confirm it; share balances within your private group. Includes WhatsApp imports, paise rounding, UPI/QR, four reminder tones, reports and shareable Hostel Wrapped stories.
 
 Deployed frontend: **YOUR_VERCEL_URL**. Backend: **YOUR_RENDER_OR_RAILWAY_URL**. These are placeholders, not live deployments.
 
@@ -12,7 +14,7 @@ The expanded seed has 25 expenses over 30 days, including old net dues, chai, a 
 
 **Reminder tones:** on Settle, choose Send reminder → polite / filmy / mummy / savage → edit → Copy or Send on WhatsApp. WhatsApp opens a draft and lets you pick the recipient; no message is sent automatically. `POST /api/reminder` accepts `{ fromId, toId, amount, tone }`, returns `{ message }`, and permits 10 requests/minute/IP. Both members must be in the configured group, different, and the amount positive with at most two decimals. Missing UPI IDs prompt the creditor to share one. Stub mode has two deterministic variants per tone; Generate again returns the same text for the same payment/tone. Disable the stub and set the existing server key/model variables for real Claude. Wrapped is limited to 20 requests/minute/IP.
 
-Hinglish expense splitting for a public demo group. The existing Lovable React/TypeScript/Tailwind frontend uses TanStack Start. `src/lib/api.ts` calls an Express API in `server/`; shared types remain in `src/lib/types.ts` and Zod contracts are in `src/lib/contracts.ts`.
+Hinglish expense splitting for private groups. The existing Lovable React/TypeScript/Tailwind frontend uses TanStack Start. `src/lib/api.ts` calls an Express API in `server/`; shared types remain in `src/lib/types.ts` and Zod contracts are in `src/lib/contracts.ts`.
 
 ## Local setup
 
@@ -100,7 +102,7 @@ DB money uses integer paise. Shares must total the amount exactly and reference 
 
 Net = paid minus shares, including repayments. Settlements preserve every paise and minimize payment count through exact zero-sum partitioning for up to 16 nonzero member balances. Larger groups use largest-debtor/creditor greedy matching for bounded response time; that fallback is not globally optimal. Repayments are ordinary expenses with description `Settlement`, category `other`, and a single recipient share. “Record payment” requires confirmation; opening UPI or a QR does not prove payment. Repayments can be edited/deleted in History. Reports include repayments in totals and explicitly say so in the shareable summary.
 
-There is intentionally no auth. Anyone with API access can read/edit the public group, including its UPI IDs. CORS is not authentication. Use demo data. Parsing is limited to 10 requests/minute/IP with an in-process store; use a shared limiter if deploying multiple replicas. JSON bodies are capped at 128 KiB and parse text at 20,000 characters.
+App endpoints require a server session and verified active group membership. Legacy shared seed data is unassigned and inaccessible through the API. CORS is not authentication. Use isolated demo sessions for judging. Parsing is limited to 10 requests/minute/IP with an in-process store; use a shared limiter if deploying multiple replicas. JSON bodies are capped at 128 KiB and parse text at 20,000 characters.
 
 ## Wispr Flow input
 
@@ -156,3 +158,11 @@ On Add, Repeat WiFi / Doodh / Gas loads the latest matching bill amount and paye
 See [regression evidence](docs/REGRESSIONS.md), [complete checklist](docs/CHECKLIST.md), [sourced research and eight ideas](docs/RESEARCH.md), and [final report + two-minute demo](docs/FINAL_REPORT.md).
 
 If the threaded frontend test worker stalls under Windows dev-watch load, use: npx vitest run --pool=forks. Backend tests: npm --prefix server test.
+
+## Accounts
+
+Email/password signup and login use bcrypt (12 rounds, 8-character minimum, 72-byte maximum), with random server-side sessions. Only a random identifier is sent in an httpOnly SameSite=Lax cookie; its SHA-256 digest is stored in the database. Production cookies are Secure and use the __Host- prefix. No login token is stored in browser storage. Logout revokes the session. Login failures are generic; account requests are limited by IP/email and repeated failures trigger a ten-minute lockout.
+
+Try demo creates a separate temporary account/group with five members and 25 expenses. It expires after 24 hours; a startup/hourly cleanup removes expired demo data, and access is denied immediately on expiry. Real accounts without a group go to onboarding. Profile edits name/UPI and keeps membership details synchronized.
+
+Set NODE_ENV=production behind HTTPS. CORS_ORIGIN must include the exact frontend origin; credentialed mutations require an allowed Origin header. For separate Vercel/Render domains use a same-origin /api proxy because SameSite=Lax cookies cannot support cross-site XHR directly.

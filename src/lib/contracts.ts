@@ -32,7 +32,7 @@ export const memberSchema = z.object({
   name: nameSchema,
   upiId: z.string().optional(),
 });
-const upiSchema = z
+export const upiSchema = z
   .string()
   .trim()
   .max(100)
@@ -146,3 +146,27 @@ export const wrappedSchema = z
     biggestExpense: expenseSchema.nullable(),
   })
   .strict();
+
+export const userSchema = z.object({
+  id: idSchema,
+  name: nameSchema,
+  email: z.string().email(),
+  upiId: z.string().nullable(),
+  color: z.string(),
+  demoExpiresAt: z.string().nullable(),
+});
+export const sessionSchema = z.object({
+  user: userSchema.nullable(),
+  activeGroupId: idSchema.nullable(),
+});
+export const loginInput = z
+  .object({
+    email: z.string().trim().toLowerCase().email().max(254),
+    password: z.string().min(8).max(72),
+  })
+  .strict();
+export const signupInput = loginInput.extend({ name: nameSchema });
+export const profileInput = z
+  .object({ name: nameSchema.optional(), upiId: upiSchema.optional() })
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, "Provide profile fields");

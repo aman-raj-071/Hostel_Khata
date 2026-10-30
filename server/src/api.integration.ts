@@ -18,12 +18,20 @@ let base: string;
 let groupId: string;
 let outsiderId: string;
 let outsiderGroup: string;
+let ownerId: string;
+let cookie = "";
 async function call(path: string, method = "GET", body?: unknown) {
   const response = await fetch(base + path, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Origin: "http://127.0.0.1:8080",
+      Cookie: cookie,
+    },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
+  const setCookie = response.headers.get("set-cookie");
+  if (setCookie) cookie = setCookie.split(";")[0]!;
   return {
     status: response.status,
     data: response.status === 204 ? undefined : await response.json(),
@@ -48,6 +56,19 @@ beforeAll(async () => {
   server = createApp(db, { groupCode: code, parseLimit: 100 }).listen(0, "127.0.0.1");
   await new Promise<void>((resolve) => server.on("listening", resolve));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  const registered = await call("/api/auth/signup", "POST", {
+    name: "Kabir",
+    email: code + "@test.invalid",
+    password: "integration-password",
+  });
+  expect(registered.status).toBe(200);
+  ownerId = registered.data.user.id;
+  await db.group.update({ where: { id: groupId }, data: { createdBy: ownerId } });
+  await db.member.updateMany({
+    where: { groupId, name: "Kabir" },
+    data: { userId: ownerId, role: "admin" },
+  });
+  await db.session.updateMany({ where: { userId: ownerId }, data: { activeGroupId: groupId } });
 });
 afterAll(async () => {
   if (server)
@@ -61,6 +82,7 @@ afterAll(async () => {
     await db.member.deleteMany({ where: { groupId: outsiderGroup } });
     await db.group.delete({ where: { id: outsiderGroup } });
   }
+  if (ownerId) await db.user.delete({ where: { id: ownerId } });
   await db.$disconnect();
   vi.unstubAllEnvs();
 });
@@ -104,7 +126,11 @@ describe("real HTTP + Prisma flow", () => {
       const url = `http://127.0.0.1:${(limited.address() as AddressInfo).port}/api/reminder`;
       const request = {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "http://127.0.0.1:8080",
+          Cookie: cookie,
+        },
         body: JSON.stringify(input),
       };
       expect((await fetch(url, request)).status).toBe(200);
@@ -262,13 +288,17 @@ describe("real HTTP + Prisma flow", () => {
   });
   it("checks CORS, consistent JSON errors and parse rate limits", async () => {
     const response = await fetch(base + "/api/group", {
-      headers: { Origin: "http://127.0.0.1:8080" },
+      headers: { Origin: "http://127.0.0.1:8080", Cookie: cookie },
     });
     expect(response.headers.get("access-control-allow-origin")).toBe("http://127.0.0.1:8080");
     expect((await call("/missing")).data).toEqual({ error: "Endpoint not found" });
     const malformed = await fetch(base + "/api/parse", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "http://127.0.0.1:8080",
+        Cookie: cookie,
+      },
       body: "{",
     });
     expect(malformed.status).toBe(400);
@@ -279,7 +309,11 @@ describe("real HTTP + Prisma flow", () => {
     try {
       const req = {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "http://127.0.0.1:8080",
+          Cookie: cookie,
+        },
         body: JSON.stringify({ text: "hi", mode: "brain-dump" }),
       };
       await fetch(url, req);

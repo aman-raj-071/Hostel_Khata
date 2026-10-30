@@ -23,6 +23,8 @@ import {
   settlementsSchema,
   reminderSchema,
   wrappedSchema,
+  sessionSchema,
+  userSchema,
 } from "./contracts";
 import { getDraftSource } from "./draft";
 
@@ -38,6 +40,7 @@ async function request<T>(
   try {
     response = await fetch(`${baseUrl}${path}`, {
       method,
+      credentials: "include",
       headers: body === undefined ? {} : { "Content-Type": "application/json" },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal: AbortSignal.timeout(75000),
@@ -115,3 +118,16 @@ export async function generateReminder(input: ReminderInput): Promise<Reminder> 
 export async function getWrapped(month: string): Promise<Wrapped> {
   return request(`/api/wrapped?month=${encodeURIComponent(month)}`, wrappedSchema);
 }
+
+export type Account = z.infer<typeof userSchema>;
+export type AccountSession = z.infer<typeof sessionSchema>;
+export const getSession = (): Promise<AccountSession> => request("/api/auth/me", sessionSchema);
+export const signup = (name: string, email: string, password: string): Promise<AccountSession> =>
+  request("/api/auth/signup", sessionSchema, "POST", { name, email, password });
+export const login = (email: string, password: string): Promise<AccountSession> =>
+  request("/api/auth/login", sessionSchema, "POST", { email, password });
+export const logout = (): Promise<void> => request("/api/auth/logout", z.void(), "POST", {});
+export const tryDemo = (): Promise<AccountSession> =>
+  request("/api/auth/demo", sessionSchema, "POST", {});
+export const updateProfile = (data: { name?: string; upiId?: string }): Promise<Account> =>
+  request("/api/auth/profile", userSchema, "PATCH", data);

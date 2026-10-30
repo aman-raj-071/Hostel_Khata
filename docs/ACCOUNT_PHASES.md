@@ -15,3 +15,13 @@ Runtime source audit returned no matches (rg exit 1) for retired browser input/a
 Large focused textarea, Brain-dump/Chat import and examples retained; Ctrl/Cmd+Enter parses, ordinary Enter/Fn stay normal; review/save remains explicit.
 
 Checks: TypeScript, lint (0 errors), production frontend/API build and 61 backend tests passed. Frontend full run passed 28 tests but one worker timed out after host interruption; its two insight tests passed separately (30 unique frontend cases verified). Shortcut targeted run passed 5/5.
+
+## Phase 2 result
+
+Added email/password accounts, bcrypt 12-round hashes, opaque 256-bit sessions (only SHA-256 digests stored), httpOnly SameSite=Lax cookies (Secure/__Host- in production), signup/login/logout/me/profile, IP/email throttles and persistent ten-minute lockout after repeated failures. Profiles synchronize membership name/UPI. Tokens never enter browser storage.
+
+Try demo creates a private five-person group with 25 expenses, isolated per session and expiring after 24 hours. Startup/hourly cleanup removes expired demo data; expiry rejects access immediately. Existing records remain preserved and are not assigned to new users. Group creation/join/admin controls follow in Phase 3.
+
+Cookie-dependent requests include credentials; writes require an allowed Origin. All legacy app endpoints now resolve group scope from the authenticated active membership. Unknown/removed access is generic.
+
+Verification: frontend 35/35; backend 61/61; real HTTP integration 10/10 (four account/session/demo tests plus six financial-flow cases). Final four auth cases also passed after atomic lockout/profile normalization. Frontend production build, root/server types and lint passed. Browser contexts A/B created different private demo group IDs, anonymous group access returned 401, session cookie was not JavaScript-readable and browser storage contained no login token.

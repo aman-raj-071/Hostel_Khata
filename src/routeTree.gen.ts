@@ -11,11 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BalancesRouteImport } from './routes/balances'
+import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as MembersRouteImport } from './routes/members'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SettleRouteImport } from './routes/settle'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as WrappedRouteImport } from './routes/wrapped'
 
 const IndexRoute = IndexRouteImport.update({
@@ -28,14 +32,29 @@ const BalancesRoute = BalancesRouteImport.update({
   path: '/balances',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GroupsRoute = GroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MembersRoute = MembersRouteImport.update({
   id: '/members',
   path: '/members',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportRoute = ReportRouteImport.update({
@@ -53,6 +72,11 @@ const SettleRoute = SettleRouteImport.update({
   path: '/settle',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WrappedRoute = WrappedRouteImport.update({
   id: '/wrapped',
   path: '/wrapped',
@@ -62,32 +86,44 @@ const WrappedRoute = WrappedRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/balances': typeof BalancesRoute
+  '/groups': typeof GroupsRoute
   '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
   '/members': typeof MembersRoute
+  '/profile': typeof ProfileRoute
   '/report': typeof ReportRoute
   '/review': typeof ReviewRoute
   '/settle': typeof SettleRoute
+  '/signup': typeof SignupRoute
   '/wrapped': typeof WrappedRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/balances': typeof BalancesRoute
+  '/groups': typeof GroupsRoute
   '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
   '/members': typeof MembersRoute
+  '/profile': typeof ProfileRoute
   '/report': typeof ReportRoute
   '/review': typeof ReviewRoute
   '/settle': typeof SettleRoute
+  '/signup': typeof SignupRoute
   '/wrapped': typeof WrappedRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/balances': typeof BalancesRoute
+  '/groups': typeof GroupsRoute
   '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
   '/members': typeof MembersRoute
+  '/profile': typeof ProfileRoute
   '/report': typeof ReportRoute
   '/review': typeof ReviewRoute
   '/settle': typeof SettleRoute
+  '/signup': typeof SignupRoute
   '/wrapped': typeof WrappedRoute
 }
 export interface FileRouteTypes {
@@ -95,42 +131,58 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/balances'
+    | '/groups'
     | '/history'
+    | '/login'
     | '/members'
+    | '/profile'
     | '/report'
     | '/review'
     | '/settle'
+    | '/signup'
     | '/wrapped'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/balances'
+    | '/groups'
     | '/history'
+    | '/login'
     | '/members'
+    | '/profile'
     | '/report'
     | '/review'
     | '/settle'
+    | '/signup'
     | '/wrapped'
   id:
     | '__root__'
     | '/'
     | '/balances'
+    | '/groups'
     | '/history'
+    | '/login'
     | '/members'
+    | '/profile'
     | '/report'
     | '/review'
     | '/settle'
+    | '/signup'
     | '/wrapped'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BalancesRoute: typeof BalancesRoute
+  GroupsRoute: typeof GroupsRoute
   HistoryRoute: typeof HistoryRoute
+  LoginRoute: typeof LoginRoute
   MembersRoute: typeof MembersRoute
+  ProfileRoute: typeof ProfileRoute
   ReportRoute: typeof ReportRoute
   ReviewRoute: typeof ReviewRoute
   SettleRoute: typeof SettleRoute
+  SignupRoute: typeof SignupRoute
   WrappedRoute: typeof WrappedRoute
 }
 
@@ -150,6 +202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BalancesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups': {
+      id: '/groups'
+      path: '/groups'
+      fullPath: '/groups'
+      preLoaderRoute: typeof GroupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/history': {
       id: '/history'
       path: '/history'
@@ -157,11 +216,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/members': {
       id: '/members'
       path: '/members'
       fullPath: '/members'
       preLoaderRoute: typeof MembersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/report': {
@@ -185,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/wrapped': {
       id: '/wrapped'
       path: '/wrapped'
@@ -198,11 +278,15 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BalancesRoute: BalancesRoute,
+  GroupsRoute: GroupsRoute,
   HistoryRoute: HistoryRoute,
+  LoginRoute: LoginRoute,
   MembersRoute: MembersRoute,
+  ProfileRoute: ProfileRoute,
   ReportRoute: ReportRoute,
   ReviewRoute: ReviewRoute,
   SettleRoute: SettleRoute,
+  SignupRoute: SignupRoute,
   WrappedRoute: WrappedRoute,
 }
 export const routeTree = rootRouteImport

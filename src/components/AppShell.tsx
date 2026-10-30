@@ -12,6 +12,7 @@ import { useGroup } from "@/lib/queries";
 import { ErrorState } from "@/components/States";
 import { DraftRecovery } from "@/components/DraftRecovery";
 import { GroupTools } from "@/components/GroupTools";
+import { AccountMenu } from "@/components/Accounts";
 
 const TABS = [
   { to: "/", label: "Add", icon: Plus },
@@ -51,6 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </Link>
         <div className="flex items-center gap-2">
+          <AccountMenu />
           <button
             aria-label={light ? "Switch to dark mode" : "Switch to light mode"}
             className="grid h-11 w-11 place-items-center rounded-xl hover:bg-muted"

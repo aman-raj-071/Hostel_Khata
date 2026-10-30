@@ -2,6 +2,7 @@ import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
 import { rateLimit } from "express-rate-limit";
 import type { PrismaClient } from "@prisma/client";
+import { createAuth } from "./auth.js";
 import { HttpError } from "./errors.js";
 import { createService, memberDto } from "./service.js";
 import { parseExpenses, indiaToday, type Completion } from "./parser.js";
@@ -39,7 +40,8 @@ export function createApp(
   } = {},
 ) {
   const app = express();
-  const service = createService(db, options.groupCode);
+  const auth = createAuth(db);
+  const scoped = (res: express.Response) => res.locals.service as ReturnType<typeof createService>;
   const wrapped = createWrappedCache();
   app.disable("x-powered-by");
   if (process.env.TRUST_PROXY_HOPS) app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS));
@@ -48,12 +50,41 @@ export function createApp(
     .map((s) => s.trim());
   app.use(
     cors({
+      credentials: true,
       origin(origin, callback) {
         callback(null, !origin || origins.includes(origin));
       },
     }),
   );
   app.use(express.json({ limit: "128kb" }));
+  app.use("/api", (req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    if (
+      !["GET", "HEAD", "OPTIONS"].includes(req.method) &&
+      (!req.headers.origin || !origins.includes(req.headers.origin))
+    ) {
+      res.status(403).json({ error: "Request origin not allowed" });
+      return;
+    }
+    next();
+  });
+  app.use("/api/auth", auth.router);
+  app.use("/api", async (req, res, next) => {
+    const session = await auth.session(req);
+    if (!session) throw new HttpError(401, "Please sign in.");
+    res.locals.session = session;
+    const member = session.activeGroupId
+      ? await db.member.findFirst({
+          where: { groupId: session.activeGroupId, userId: session.userId, status: "active" },
+          include: { group: true },
+        })
+      : null;
+    if (!member || (member.group.expiresAt && member.group.expiresAt <= new Date()))
+      throw new HttpError(403, "Group access unavailable.");
+    res.locals.service = createService(db, member.group.code);
+    res.locals.membership = member;
+    next();
+  });
   const send = <T>(res: express.Response, schema: z.ZodType<T>, value: unknown, status = 200) => {
     const result = schema.safeParse(value);
     if (!result.success)
@@ -64,7 +95,7 @@ export function createApp(
     await db.$queryRaw`SELECT 1`;
     res.json({ status: "ok" });
   });
-  app.get("/api/group", async (_req, res) => send(res, groupSchema, await service.getGroup()));
+  app.get("/api/group", async (_req, res) => send(res, groupSchema, await scoped(res).getGroup()));
   app.post(
     "/api/parse",
     rateLimit({
@@ -76,7 +107,7 @@ export function createApp(
     }),
     async (req, res) => {
       const input = parseInput.parse(req.body);
-      const g = await service.group();
+      const g = await scoped(res).group();
       send(
         res,
         parsedResponseSchema,
@@ -86,7 +117,7 @@ export function createApp(
   );
   app.post("/api/expenses", async (req, res) => {
     const body = saveInput.parse(req.body);
-    send(res, z.array(expenseSchema), await service.save(body.expenses, body.rawText), 201);
+    send(res, z.array(expenseSchema), await scoped(res).save(body.expenses, body.rawText), 201);
   });
   app.post(
     "/api/reminder",
@@ -99,35 +130,35 @@ export function createApp(
     }),
     async (req, res) => {
       const input = reminderInput.parse(req.body);
-      const group = await service.group();
+      const group = await scoped(res).group();
       send(res, reminderSchema, await generateReminder(input, group.members.map(memberDto)));
     },
   );
   app.get("/api/expenses", async (req, res) =>
-    send(res, z.array(expenseSchema), await service.list(filtersSchema.parse(req.query))),
+    send(res, z.array(expenseSchema), await scoped(res).list(filtersSchema.parse(req.query))),
   );
   app.patch("/api/expenses/:id", async (req, res) =>
     send(
       res,
       expenseSchema,
-      await service.updateExpense(req.params.id as string, expensePatch.parse(req.body)),
+      await scoped(res).updateExpense(req.params.id as string, expensePatch.parse(req.body)),
     ),
   );
   app.delete("/api/expenses/:id", async (req, res) => {
-    await service.deleteExpense(req.params.id as string);
+    await scoped(res).deleteExpense(req.params.id as string);
     res.status(204).end();
   });
   app.get("/api/balances", async (_req, res) =>
-    send(res, balancesSchema, await service.getBalances()),
+    send(res, balancesSchema, await scoped(res).getBalances()),
   );
   app.get("/api/settlements", async (_req, res) =>
-    send(res, settlementsSchema, await service.getSettlements()),
+    send(res, settlementsSchema, await scoped(res).getSettlements()),
   );
   app.get("/api/report", async (req, res) =>
     send(
       res,
       reportSchema,
-      await service.report(monthSchema.parse(req.query.month ?? indiaToday().slice(0, 7))),
+      await scoped(res).report(monthSchema.parse(req.query.month ?? indiaToday().slice(0, 7))),
     ),
   );
   app.get(
@@ -141,22 +172,26 @@ export function createApp(
     }),
     async (req, res) => {
       const month = monthSchema.parse(req.query.month ?? indiaToday().slice(0, 7));
-      const group = await service.getGroup();
-      send(res, wrappedSchema, await wrapped(group.id, month, group.members, await service.list()));
+      const group = await scoped(res).getGroup();
+      send(
+        res,
+        wrappedSchema,
+        await wrapped(group.id, month, group.members, await scoped(res).list()),
+      );
     },
   );
   app.post("/api/members", async (req, res) =>
-    send(res, memberSchema, await service.addMember(memberInput.parse(req.body)), 201),
+    send(res, memberSchema, await scoped(res).addMember(memberInput.parse(req.body)), 201),
   );
   app.patch("/api/members/:id", async (req, res) =>
     send(
       res,
       memberSchema,
-      await service.updateMember(req.params.id as string, memberPatch.parse(req.body)),
+      await scoped(res).updateMember(req.params.id as string, memberPatch.parse(req.body)),
     ),
   );
   app.delete("/api/members/:id", async (req, res) => {
-    await service.removeMember(req.params.id as string);
+    await scoped(res).removeMember(req.params.id as string);
     res.status(204).end();
   });
   app.use((_req, res) => {
