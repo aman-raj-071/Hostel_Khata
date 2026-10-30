@@ -54,7 +54,7 @@ export function balances(memberIds: string[], expenses: LedgerExpense[]) {
   return [...net].map(([memberId, netPaise]) => ({ memberId, netPaise }));
 }
 
-export function simplify(input: { memberId: string; netPaise: number }[]) {
+function greedy(input: { memberId: string; netPaise: number }[]) {
   if (
     input.some((b) => !Number.isSafeInteger(b.netPaise)) ||
     input.reduce((sum, b) => sum + b.netPaise, 0) !== 0
@@ -72,7 +72,6 @@ export function simplify(input: { memberId: string; netPaise: number }[]) {
     a: { id: string; remaining: number },
     b: { id: string; remaining: number },
   ) => b.remaining - a.remaining || a.id.localeCompare(b.id);
-  // shortcut: greedy does not guarantee the global fewest transfers, upgrade only if exact optimization is required.
   while (debtors.some((b) => b.remaining) && creditors.some((b) => b.remaining)) {
     debtors.sort(largestFirst);
     creditors.sort(largestFirst);
@@ -84,4 +83,57 @@ export function simplify(input: { memberId: string; netPaise: number }[]) {
     creditor.remaining -= amountPaise;
   }
   return result;
+}
+
+export function simplify(input: { memberId: string; netPaise: number }[]) {
+  if (new Set(input.map((balance) => balance.memberId)).size !== input.length)
+    throw new Error("Member balances must be unique.");
+  const baseline = greedy(input);
+  const active = input.filter((balance) => balance.netPaise !== 0);
+  const lowerBound = Math.max(
+    active.filter((balance) => balance.netPaise < 0).length,
+    active.filter((balance) => balance.netPaise > 0).length,
+  );
+  if (baseline.length === lowerBound) return baseline;
+  // shortcut: exact partitioning is bounded to 16 nonzero balances; larger groups use greedy to keep public requests responsive.
+  if (active.length > 16) return baseline;
+  const size = 1 << active.length;
+  const sums = new Float64Array(size);
+  const groups = new Uint8Array(size);
+  const last = new Uint8Array(size);
+  for (let mask = 1; mask < size; mask++) {
+    const bit = 31 - Math.clz32(mask & -mask);
+    sums[mask] = sums[mask ^ (1 << bit)]! + active[bit]!.netPaise;
+    if (!Number.isSafeInteger(sums[mask]))
+      throw new Error("Balance totals exceed safe integer paise.");
+    let best = -1;
+    for (let remaining = mask; remaining; remaining &= remaining - 1) {
+      const index = 31 - Math.clz32(remaining & -remaining);
+      const count = groups[mask ^ (1 << index)]! + (sums[mask] === 0 ? 1 : 0);
+      if (count > best) {
+        best = count;
+        last[mask] = index;
+      }
+    }
+    groups[mask] = best;
+  }
+  const order: number[] = [];
+  for (let mask = size - 1; mask;) {
+    const index = last[mask]!;
+    order.push(index);
+    mask ^= 1 << index;
+  }
+  const payments: ReturnType<typeof greedy> = [];
+  let group: typeof active = [],
+    net = 0;
+  for (const index of order.reverse()) {
+    const member = active[index]!;
+    group.push(member);
+    net += member.netPaise;
+    if (net === 0) {
+      payments.push(...greedy(group));
+      group = [];
+    }
+  }
+  return payments.length < baseline.length ? payments : baseline;
 }

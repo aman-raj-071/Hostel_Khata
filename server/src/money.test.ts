@@ -27,7 +27,37 @@ describe("integer money and equal rounding", () => {
   });
 });
 
-describe("greedy simplification", () => {
+describe("debt simplification", () => {
+  it.each([
+    [[1000, 800, -800, -500, -500], 3],
+    [[800, 700, 600, -900, -800, -400], 4],
+  ])("finds the global minimum on cases where largest-first greedy overpays", (amounts, count) => {
+    const ledger = (amounts as number[]).map((netPaise, index) => ({
+      memberId: String(index),
+      netPaise,
+    }));
+    const result = simplify(ledger);
+    expect(result).toHaveLength(count as number);
+    const remaining = new Map(ledger.map((balance) => [balance.memberId, balance.netPaise]));
+    for (const payment of result) {
+      remaining.set(payment.fromId, remaining.get(payment.fromId)! + payment.amountPaise);
+      remaining.set(payment.toId, remaining.get(payment.toId)! - payment.amountPaise);
+    }
+    expect([...remaining.values()].every((value) => value === 0)).toBe(true);
+  });
+  it("keeps large-group requests bounded and rejects duplicate IDs", () => {
+    const large = [...Array(8).fill(1000), ...Array(10).fill(-800)].map((netPaise, index) => ({
+      memberId: String(index),
+      netPaise,
+    }));
+    expect(simplify(large).length).toBeLessThanOrEqual(17);
+    expect(() =>
+      simplify([
+        { memberId: "a", netPaise: 100 },
+        { memberId: "a", netPaise: -100 },
+      ]),
+    ).toThrow("unique");
+  });
   it.each([
     ["three members", [-5000, -3000, 8000]],
     ["five members", [-5000, -3000, -2000, 4000, 6000]],

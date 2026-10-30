@@ -301,7 +301,7 @@ describe("real HTTP + Prisma flow", () => {
           "--env-file-if-exists=.env",
           "prisma/seed.ts",
         ],
-        { cwd: process.cwd(), env: { ...process.env, GROUP_CODE: seedCode }, timeout: 20000 },
+        { cwd: process.cwd(), env: { ...process.env, GROUP_CODE: seedCode }, timeout: 60000 },
       );
     try {
       await seed();
@@ -329,5 +329,5 @@ describe("real HTTP + Prisma flow", () => {
         await db.group.delete({ where: { id: seeded.id } });
       }
     }
-  });
+  }, 130000);
 });

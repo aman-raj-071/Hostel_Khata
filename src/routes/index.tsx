@@ -3,6 +3,7 @@ import { Loader2, Sparkles, Mic, Square } from "lucide-react";
 import { useContext, useState } from "react";
 import { VoiceContext } from "@/lib/voice-context";
 import { KhataMascot } from "@/components/KhataMascot";
+import { RecurringTemplates } from "@/components/RecurringTemplates";
 import { toast } from "sonner";
 import { Avatar, PageTitle } from "@/components/States";
 import { useGroup } from "@/lib/queries";
@@ -146,6 +147,8 @@ function AddPage() {
         or type / paste chat
         <span className="h-px flex-1 bg-border" />
       </div>
+
+      {!text.trim() && <RecurringTemplates />}
 
       <div className="grid grid-cols-2 rounded-2xl bg-muted p-1" role="tablist">
         {(["brain-dump", "chat-import"] as const).map((m) => (

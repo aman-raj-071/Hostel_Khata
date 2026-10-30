@@ -48,23 +48,23 @@ Set `server/.env` to `DATABASE_URL=postgresql://hostel:hostel_local@127.0.0.1:54
 
 Frontend `.env` is public and compiled at build time:
 
-| Variable | Purpose |
-| --- | --- |
+| Variable       | Purpose                                                                            |
+| -------------- | ---------------------------------------------------------------------------------- |
 | `VITE_API_URL` | API origin, e.g. `http://127.0.0.1:3001` or your HTTPS backend origin; omit `/api` |
 
 Server `server/.env` is ignored by Git:
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | PostgreSQL URL, or `file:./dev.db` locally, relative to `server/` |
-| `DIRECT_URL` | Optional direct/unpooled PostgreSQL URL for migrations; runtime uses `DATABASE_URL` |
-| `ANTHROPIC_API_KEY` | Server-only secret; never use a `VITE_` prefix |
-| `ANTHROPIC_MODEL` | A Claude model ID enabled for your account |
-| `USE_CLAUDE_STUB` | Exactly `true` enables offline fixtures; `false` calls Claude |
-| `PORT` | API port, default `3001` |
-| `CORS_ORIGIN` | Comma-separated frontend origins without trailing slashes |
-| `GROUP_CODE` | Server-selected demo group, default `flat-302` |
-| `TRUST_PROXY_HOPS` | `0` locally; set the verified reverse-proxy hop count on your host |
+| Variable            | Purpose                                                                             |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `DATABASE_URL`      | PostgreSQL URL, or `file:./dev.db` locally, relative to `server/`                   |
+| `DIRECT_URL`        | Optional direct/unpooled PostgreSQL URL for migrations; runtime uses `DATABASE_URL` |
+| `ANTHROPIC_API_KEY` | Server-only secret; never use a `VITE_` prefix                                      |
+| `ANTHROPIC_MODEL`   | A Claude model ID enabled for your account                                          |
+| `USE_CLAUDE_STUB`   | Exactly `true` enables offline fixtures; `false` calls Claude                       |
+| `PORT`              | API port, default `3001`                                                            |
+| `CORS_ORIGIN`       | Comma-separated frontend origins without trailing slashes                           |
+| `GROUP_CODE`        | Server-selected demo group, default `flat-302`                                      |
+| `TRUST_PROXY_HOPS`  | `0` locally; set the verified reverse-proxy hop count on your host                  |
 
 ### Switch to real Claude
 
@@ -74,33 +74,33 @@ Server `server/.env` is ignored by Git:
 
 Without a key and with the stub off, parsing returns 503 and exactly `{ "error": "ANTHROPIC_API_KEY not configured" }`. Stub mode never instantiates the Anthropic client. Both paths use the same Zod validation, fuzzy member resolution, sum checks and retry-once pipeline. The user-supplied prompt is stored verbatim in `server/prompts/parsePrompt.ts`. `PARSE_SYSTEM_PROMPT` is the system prompt and `buildParseUserMessage` constructs the single user message. Temperature is 0. Names come from the DB and dates use Asia/Kolkata. Parse persists nothing.
 
-The stub covers common keyword amounts, named payers, exclusions, chat senders and repayments. It is not a substitute for Claude's complex percentages, itemized orders or arbitrary Hinglish. Unknown amounts remain visible as 0 with clarification required; saving rejects them. Only unique close name matches are accepted; arbitrary nicknames need review. Real parsing sends the submitted text and member names to Anthropic, so avoid submitting unrelated private chat history.
+The stub covers multiple expenses, timestamped chat senders/noise, Hinglish numbers, subsets/exclusions, exact/percentage allocations, priced itemized meals and repayments. It is a deterministic demo grammar, not arbitrary language understanding; unsupported or incomplete wording requires review. Unknown amounts remain visible as 0 with clarification required; saving rejects them. Only unique close name matches are accepted; arbitrary nicknames need review. Real parsing sends the submitted text and member names to Anthropic, so avoid submitting unrelated private chat history.
 
 ## REST API
 
 Errors consistently return `{ "error": "friendly message" }`. Zod validates requests and responses, including the frontend HTTP boundary. Status codes: invalid input 400, unknown records 404, data conflicts 409, unresolved/invalid splits 422, throttling 429, upstream Claude failure 502, missing parser configuration 503 and internal failure 500.
 
-| Method | Endpoint | Input / result |
-| --- | --- | --- |
-| GET | `/health` | Checks database connectivity |
-| GET | `/api/group` | `{ id, name, members }` |
-| POST | `/api/parse` | `{ text, mode, speaker? }` → `{ expenses: ParsedExpense[] }` |
-| POST | `/api/expenses` | `{ expenses: ParsedExpense[], rawText? }` → `Expense[]` |
-| GET | `/api/expenses` | Optional `memberId`, `q` (description/payer), `month=YYYY-MM` |
-| PATCH | `/api/expenses/:id` | `Partial<Expense>`; merged record must balance |
-| DELETE | `/api/expenses/:id` | 204 |
-| GET | `/api/balances` | `Balance[]` |
-| GET | `/api/settlements` | `Settlement[]` |
-| GET | `/api/report` | `month=YYYY-MM`; defaults to current India month |
-| POST | `/api/members` | `{ name, upiId? }` |
-| PATCH | `/api/members/:id` | `Partial<Member>` |
-| DELETE | `/api/members/:id` | 204; refuses removal if referenced by expenses |
+| Method | Endpoint            | Input / result                                                |
+| ------ | ------------------- | ------------------------------------------------------------- |
+| GET    | `/health`           | Checks database connectivity                                  |
+| GET    | `/api/group`        | `{ id, name, members }`                                       |
+| POST   | `/api/parse`        | `{ text, mode, speaker? }` → `{ expenses: ParsedExpense[] }`  |
+| POST   | `/api/expenses`     | `{ expenses: ParsedExpense[], rawText? }` → `Expense[]`       |
+| GET    | `/api/expenses`     | Optional `memberId`, `q` (description/payer), `month=YYYY-MM` |
+| PATCH  | `/api/expenses/:id` | `Partial<Expense>`; merged record must balance                |
+| DELETE | `/api/expenses/:id` | 204                                                           |
+| GET    | `/api/balances`     | `Balance[]`                                                   |
+| GET    | `/api/settlements`  | `Settlement[]`                                                |
+| GET    | `/api/report`       | `month=YYYY-MM`; defaults to current India month              |
+| POST   | `/api/members`      | `{ name, upiId? }`                                            |
+| PATCH  | `/api/members/:id`  | `Partial<Member>`                                             |
+| DELETE | `/api/members/:id`  | 204; refuses removal if referenced by expenses                |
 
 The frontend retains `parseText(text, mode)`, so sends no explicit speaker. First-person statements without a chat sender need payer confirmation. The REST endpoint accepts `speaker` for other clients. The original parsed input is preserved as `rawText` when confirmed. Shares in `ParsedExpense` always represent rupee amounts, including percent/itemized splits.
 
 DB money uses integer paise. Shares must total the amount exactly and reference unique members in this group. Equal splits floor the base share and give leftover paise to the payer. If the payer is excluded and there is a remainder, include the payer or choose an exact split; the server never silently adds participants. Saving a batch is atomic. Foreign keys protect referenced members.
 
-Net = paid minus shares, including repayments. Greedy settlements repeatedly match the largest remaining debtor and creditor and preserve every paise. Greedy reduces transfers but does not guarantee a global minimum. Repayments are ordinary expenses with description `Settlement`, category `other`, and a single recipient share. “Record payment” requires confirmation; opening UPI or a QR does not prove payment. Repayments can be edited/deleted in History. Reports include repayments in totals and explicitly say so in the shareable summary.
+Net = paid minus shares, including repayments. Settlements preserve every paise and minimize payment count through exact zero-sum partitioning for up to 16 nonzero member balances. Larger groups use largest-debtor/creditor greedy matching for bounded response time; that fallback is not globally optimal. Repayments are ordinary expenses with description `Settlement`, category `other`, and a single recipient share. “Record payment” requires confirmation; opening UPI or a QR does not prove payment. Repayments can be edited/deleted in History. Reports include repayments in totals and explicitly say so in the shareable summary.
 
 There is intentionally no auth. Anyone with API access can read/edit the public group, including its UPI IDs. CORS is not authentication. Use demo data. Parsing is limited to 10 requests/minute/IP with an in-process store; use a shared limiter if deploying multiple replicas. JSON bodies are capped at 128 KiB and parse text at 20,000 characters.
 
@@ -110,20 +110,20 @@ Every page has a **Start voice** toolbar. Choose English/Hinglish (`en-IN`) or H
 
 While listening, numbered badges identify the page's fields, buttons, tabs, links and dropdown options. Existing app validation and confirmation dialogs still apply.
 
-| Say | Action |
-| --- | --- |
-| `add kholo`, `balances kholo`, `settle kholo`, `history kholo`, `report kholo`, `members kholo`, `review kholo` | Open that page |
-| `बैलेंस दिखाओ`, `रिपोर्ट खोलो` | Hindi navigation |
-| `click 5`, `button five`, `बटन पांच` | Activate/focus numbered control 5 |
-| `click Paid by`, then `click 7` | Open a dropdown, then select its numbered option |
-| `likho Kabir ne dinner 500 kiya` | Replace the focused field, or the only text field |
-| `likhna shuru` → expense sentences → `likhna band` | Dictate into the selected text field, then return to command mode |
-| `parse karo`, `save karo` | Use the existing Parse or Save action; ambiguous buttons require a number |
-| `confirm`, `cancel` | Confirm/cancel the currently displayed app dialog; nothing is silently confirmed |
-| `search chai` | Search the History page |
-| `neeche jao`, `upar jao` | Scroll the page or open scrollable dialog |
-| `mic band`, `stop listening` | Release the microphone |
-| `help` | Show/hide the command guide |
+| Say                                                                                                             | Action                                                                           |
+| --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `add kholo`, `balances kholo`, `settle kholo`, `history kholo`, `report kholo`, `members kholo`, `review kholo` | Open that page                                                                   |
+| `बैलेंस दिखाओ`, `रिपोर्ट खोलो`                                                                                  | Hindi navigation                                                                 |
+| `click 5`, `button five`, `बटन पांच`                                                                            | Activate/focus numbered control 5                                                |
+| `click Paid by`, then `click 7`                                                                                 | Open a dropdown, then select its numbered option                                 |
+| `likho Kabir ne dinner 500 kiya`                                                                                | Replace the focused field, or the only text field                                |
+| `likhna shuru` → expense sentences → `likhna band`                                                              | Dictate into the selected text field, then return to command mode                |
+| `parse karo`, `save karo`                                                                                       | Use the existing Parse or Save action; ambiguous buttons require a number        |
+| `confirm`, `cancel`                                                                                             | Confirm/cancel the currently displayed app dialog; nothing is silently confirmed |
+| `search chai`                                                                                                   | Search the History page                                                          |
+| `neeche jao`, `upar jao`                                                                                        | Scroll the page or open scrollable dialog                                        |
+| `mic band`, `stop listening`                                                                                    | Release the microphone                                                           |
+| `help`                                                                                                          | Show/hide the command guide                                                      |
 
 For number/date fields use complete values: `likho 500.50`, or `likho 2026 dash 10 dash 29`. UPI fields understand `aman dot raj at ybl`; always check the recognized value before saving. Controls with the same label must be selected by number. In dictation mode, phrases such as "save karo" become text until you say "likhna band". Changing pages, hiding the tab or pressing Stop ends dictation; hiding the tab/unmounting also stops microphone capture. Permission, connection and unsupported-language failures show a message rather than repeatedly requesting access.
 
@@ -167,3 +167,7 @@ npm --prefix server start
 Set `DATABASE_URL`, optional `DIRECT_URL`, `CORS_ORIGIN` to your frontend origin, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `USE_CLAUDE_STUB=false`, and the correct `TRUST_PROXY_HOPS`. Run `npm run db:seed` once in `/app/server`, or `npm --prefix server run db:seed` outside Docker. `/health` should return `{ "status": "ok" }`. Do not deploy local SQLite files; containers use PostgreSQL persistence. Hosted deployment and live Claude require your own account configuration.
 
 Continue UI work in the [Lovable project](https://lovable.dev/projects/7f5ab845-09df-430a-9a76-a62b56b5b7d9). Avoid rewriting published history because pushed commits sync with Lovable.
+
+## Repeat expenses
+
+On Add, Repeat WiFi / Doodh / Gas loads the latest matching bill amount and payer into an unsaved review for today. Current members share it equally; confirm or edit the payer, price and split. Missing history never invents an amount. These are manual templates, not automatic recurring charges.
