@@ -1,5 +1,6 @@
 import type { Expense, Group, ParsedExpense } from "./types";
 import { splitEqually } from "@/components/SplitChips";
+import { activeMembers } from "./active-members";
 
 export const RECURRING = [
   { name: "WiFi", pattern: /wifi|wi-fi/i, category: "utilities" },
@@ -18,9 +19,10 @@ export function recurringPreview(
   const latest = expenses
     .filter((e) => template.pattern.test(e.description) && e.description !== "Settlement")
     .sort((a, b) => b.date.localeCompare(a.date))[0];
-  const payer = group.members.find((m) => m.id === latest?.payerId)?.name ?? "";
+  const currentMembers = activeMembers(group.members);
+  const payer = currentMembers.find((m) => m.id === latest?.payerId)?.name ?? "";
   const amount = latest?.amount ?? 0;
-  const participants = group.members.map((m) => m.name);
+  const participants = currentMembers.map((m) => m.name);
   return {
     payer,
     amount,

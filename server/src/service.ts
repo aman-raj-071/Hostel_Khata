@@ -5,10 +5,20 @@ import { balances, equalSplit, simplify, toPaise, toRupees } from "./money.js";
 import { expenseSchema } from "./schemas.js";
 
 type StoredExpense = Prisma.ExpenseGetPayload<{ include: { shares: true } }>;
-export const memberDto = (m: { id: string; name: string; upiId: string | null }): Member => ({
+export const memberDto = (m: {
+  id: string;
+  name: string;
+  upiId: string | null;
+  userId?: string | null;
+  role?: string;
+  status?: string;
+}): Member => ({
   id: m.id,
   name: m.name,
   ...(m.upiId ? { upiId: m.upiId } : {}),
+  ...(m.userId ? { userId: m.userId } : {}),
+  ...(m.role ? { role: m.role as Member["role"] } : {}),
+  ...(m.status ? { status: m.status as Member["status"] } : {}),
 });
 export const expenseDto = (e: StoredExpense): Expense => ({
   id: e.id,
@@ -37,7 +47,7 @@ export function createService(db: PrismaClient, code = process.env.GROUP_CODE ||
   async function group(client: Prisma.TransactionClient = db) {
     const result = await client.group.findUnique({
       where: { code },
-      include: { members: { orderBy: { name: "asc" } } },
+      include: { members: { where: { status: { not: "pending" } }, orderBy: { name: "asc" } } },
     });
     if (!result)
       throw new HttpError(503, "Demo group is not initialized. Run the database seed script.");
@@ -92,14 +102,20 @@ export function createService(db: PrismaClient, code = process.env.GROUP_CODE ||
     group,
     async getGroup() {
       const g = await group();
-      return { id: g.id, name: g.name, members: g.members.map(memberDto) };
+      return {
+        id: g.id,
+        name: g.name,
+        members: g.members.filter((m) => m.status !== "pending").map(memberDto),
+      };
     },
     list,
     async save(parsed: ParsedExpense[], rawText?: string) {
       return db.$transaction(async (tx) => {
         const g = await group(tx);
         const idFor = (name: string) => {
-          const m = g.members.find((m) => m.name.toLowerCase() === name.toLowerCase());
+          const m = g.members.find(
+            (m) => m.status === "active" && m.name.toLowerCase() === name.toLowerCase(),
+          );
           if (!m)
             throw new HttpError(
               422,
@@ -149,7 +165,7 @@ export function createService(db: PrismaClient, code = process.env.GROUP_CODE ||
           });
           validateExpense(
             e,
-            g.members.map((m) => m.id),
+            g.members.filter((m) => m.status === "active").map((m) => m.id),
           );
           const saved = await tx.expense.create({
             data: {
@@ -184,9 +200,16 @@ export function createService(db: PrismaClient, code = process.env.GROUP_CODE ||
         if (!current) throw new HttpError(404, "Expense not found");
         if (patch.id && patch.id !== id) throw new HttpError(400, "Expense ID cannot be changed");
         const next = expenseSchema.parse({ ...expenseDto(current), ...patch, id });
+        const previous = expenseDto(current);
+        const priorShares = new Map(previous.shares.map((s) => [s.memberId, s.amount]));
+        const financialChanged =
+          next.amount !== previous.amount ||
+          next.payerId !== previous.payerId ||
+          next.shares.length !== previous.shares.length ||
+          next.shares.some((s) => priorShares.get(s.memberId) !== s.amount);
         validateExpense(
           next,
-          g.members.map((m) => m.id),
+          g.members.filter((m) => !financialChanged || m.status === "active").map((m) => m.id),
         );
         return expenseDto(
           await tx.expense.update({

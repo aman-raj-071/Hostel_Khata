@@ -1,9 +1,49 @@
+export async function updateOwnProfile(
+  db: PrismaClient,
+  userId: string,
+  input: { name?: string; upiId?: string },
+) {
+  return db.$transaction(
+    async (tx) => {
+      if (input.name) {
+        const own = await tx.member.findMany({
+          where: { userId, status: { in: ["active", "pending"] } },
+          select: { groupId: true },
+        });
+        const peers = await tx.member.findMany({
+          where: {
+            groupId: { in: own.map((m) => m.groupId) },
+            userId: { not: userId },
+            status: "active",
+          },
+          select: { name: true },
+        });
+        if (peers.some((m) => cleanName(m.name) === cleanName(input.name!)))
+          throw new HttpError(
+            409,
+            "Choose a distinct name for your groups, for example your full name.",
+          );
+      }
+      const user = await tx.user.update({
+        where: { id: userId },
+        data: { ...input, ...(input.upiId === "" ? { upiId: null } : {}) },
+      });
+      await tx.member.updateMany({
+        where: { userId: user.id, status: { in: ["active", "pending"] } },
+        data: { name: user.name, upiId: user.upiId },
+      });
+      return user;
+    },
+    { isolationLevel: "Serializable" },
+  );
+}
 import { randomBytes, createHash } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import type { PrismaClient, User } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { HttpError } from "./errors.js";
+import { cleanName } from "./name-matching.js";
 import { loginInput, signupInput, profileInput } from "../../src/lib/contracts.js";
 import { createDemo, cleanupExpiredDemos } from "./demo.js";
 
@@ -179,17 +219,7 @@ export function createAuth(db: PrismaClient) {
     const current = await session(req);
     if (!current) throw new HttpError(401, "Please sign in.");
     const input = profileInput.parse(req.body);
-    const user = await db.$transaction(async (tx) => {
-      const user = await tx.user.update({
-        where: { id: current.userId },
-        data: { ...input, ...(input.upiId === "" ? { upiId: null } : {}) },
-      });
-      await tx.member.updateMany({
-        where: { userId: user.id },
-        data: { name: user.name, upiId: user.upiId },
-      });
-      return user;
-    });
+    const user = await updateOwnProfile(db, current.userId, input);
     res.json(userDto(user));
   });
   return { router, session };

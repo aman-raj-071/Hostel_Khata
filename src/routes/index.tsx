@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { parseText } from "@/lib/api";
 import { setDraft } from "@/lib/draft";
 import type { ParseMode } from "@/lib/types";
+import { activeMembers } from "@/lib/active-members";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -88,7 +89,7 @@ function AddPage() {
           aria-label="Your flatmates"
         >
           <span className="mr-2 text-xs text-muted-foreground">Your gang</span>
-          {group.members.map((member) => (
+          {activeMembers(group.members).map((member) => (
             <div
               key={member.id}
               className="flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3"

@@ -12,6 +12,8 @@ import { useGroup } from "@/lib/queries";
 import { ErrorState } from "@/components/States";
 import { DraftRecovery } from "@/components/DraftRecovery";
 import { GroupTools } from "@/components/GroupTools";
+import { GroupSwitcher } from "@/components/PrivateGroups";
+import { useAccount } from "@/lib/account-context";
 import { AccountMenu } from "@/components/Accounts";
 
 const TABS = [
@@ -24,6 +26,7 @@ const TABS = [
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { session } = useAccount();
   const groupQuery = useGroup();
   const group = groupQuery.data;
   const { pathname } = useLocation();
@@ -41,7 +44,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [light]);
   return (
     <div className="app-frame mx-auto flex min-h-screen max-w-5xl flex-col">
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/90 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-30 flex flex-wrap gap-2 items-center justify-between border-b border-border bg-background/90 px-4 py-3 backdrop-blur">
         <Link to="/" className="flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-lg font-bold text-primary-foreground">
             ₹
@@ -52,6 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </Link>
         <div className="flex items-center gap-2">
+          {session?.user && <GroupSwitcher />}
           <AccountMenu />
           <button
             aria-label={light ? "Switch to dark mode" : "Switch to light mode"}

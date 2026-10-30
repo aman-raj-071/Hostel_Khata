@@ -1,3 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AccountForm } from "@/components/Accounts";
-export const Route = createFileRoute("/login")({ component: () => <AccountForm kind="login" /> });
+export const Route = createFileRoute("/login")({
+  validateSearch: (s: Record<string, unknown>): { next?: string | undefined } => ({
+    next: typeof s["next"] === "string" ? s["next"] : undefined,
+  }),
+  component: () => <AccountForm kind="login" />,
+});

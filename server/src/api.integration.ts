@@ -195,17 +195,15 @@ describe("real HTTP + Prisma flow", () => {
       expect((await call(`/api/expenses/${e.id}`, "DELETE")).status).toBe(204);
   });
   it("validates CRUD and blocks cross-group writes and unresolved saves atomically", async () => {
-    const added = await call("/api/members", "POST", { name: "Guest", upiId: "guest@ybl" });
-    expect(added.status).toBe(201);
-    expect(
-      (await call(`/api/members/${added.data.id}`, "PATCH", { upiId: "" })).data.upiId,
-    ).toBeUndefined();
-    expect((await call(`/api/members/${outsiderId}`, "PATCH", { name: "Hacked" })).status).toBe(
-      404,
+    expect((await call("/api/members", "POST", { name: "Guest" })).status).toBe(409);
+    const own = (await call("/api/group")).data.members.find(
+      (m: { userId?: string }) => m.userId === ownerId,
     );
-    expect((await call(`/api/members/${outsiderId}`, "DELETE")).status).toBe(404);
-    expect((await call(`/api/members/${added.data.id}`, "DELETE")).status).toBe(204);
-    expect((await call("/api/members", "POST", { name: "aman" })).status).toBe(409);
+    expect((await call("/api/members/" + own.id, "PATCH", { upiId: "" })).status).toBe(200);
+    expect((await call("/api/members/" + outsiderId, "PATCH", { name: "Hacked" })).status).toBe(
+      403,
+    );
+    expect((await call("/api/members/" + outsiderId, "DELETE")).status).toBe(403);
     const p = (
       await call("/api/parse", "POST", {
         text: "Kabir ne dinner 100 sabne barabar",

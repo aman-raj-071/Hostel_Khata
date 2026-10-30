@@ -21,6 +21,7 @@ import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SettleRouteImport } from './routes/settle'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as WrappedRouteImport } from './routes/wrapped'
+import { Route as JoinCodeRouteImport } from './routes/join.$code'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -82,6 +83,11 @@ const WrappedRoute = WrappedRouteImport.update({
   path: '/wrapped',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JoinCodeRoute = JoinCodeRouteImport.update({
+  id: '/join/$code',
+  path: '/join/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/settle': typeof SettleRoute
   '/signup': typeof SignupRoute
   '/wrapped': typeof WrappedRoute
+  '/join/$code': typeof JoinCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/settle': typeof SettleRoute
   '/signup': typeof SignupRoute
   '/wrapped': typeof WrappedRoute
+  '/join/$code': typeof JoinCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/settle': typeof SettleRoute
   '/signup': typeof SignupRoute
   '/wrapped': typeof WrappedRoute
+  '/join/$code': typeof JoinCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/settle'
     | '/signup'
     | '/wrapped'
+    | '/join/$code'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/settle'
     | '/signup'
     | '/wrapped'
+    | '/join/$code'
   id:
     | '__root__'
     | '/'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/settle'
     | '/signup'
     | '/wrapped'
+    | '/join/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   SettleRoute: typeof SettleRoute
   SignupRoute: typeof SignupRoute
   WrappedRoute: typeof WrappedRoute
+  JoinCodeRoute: typeof JoinCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WrappedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/join/$code': {
+      id: '/join/$code'
+      path: '/join/$code'
+      fullPath: '/join/$code'
+      preLoaderRoute: typeof JoinCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -288,6 +308,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettleRoute: SettleRoute,
   SignupRoute: SignupRoute,
   WrappedRoute: WrappedRoute,
+  JoinCodeRoute: JoinCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

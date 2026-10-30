@@ -18,6 +18,7 @@ import { setDraft, useDraft } from "@/lib/draft";
 import { CATEGORIES, CATEGORY_EMOJI } from "@/lib/format";
 import { useGroup, useRefreshAll } from "@/lib/queries";
 import type { Member, ParsedExpense } from "@/lib/types";
+import { activeMembers } from "@/lib/active-members";
 
 export const Route = createFileRoute("/review")({
   head: () => ({
@@ -89,7 +90,7 @@ function ReviewPage() {
           <ParsedCard
             key={i}
             value={p}
-            members={group.members}
+            members={activeMembers(group.members)}
             onChange={(n) => update(i, n)}
             onRemove={() => setDraft(draft.filter((_, j) => j !== i))}
           />

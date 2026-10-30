@@ -7,6 +7,10 @@ export const AccountContext = createContext<{
   refresh: () => Promise<unknown>;
 }>({ session: null, loading: true, error: null, refresh: async () => {} });
 export const useAccount = () => useContext(AccountContext);
+export function safeAccountNext(search: string) {
+  const next = new URLSearchParams(search).get("next");
+  return next && /^\/join\/[A-Z0-9-]{8,32}$/i.test(next) ? next : "/";
+}
 export function clearPrivateDrafts() {
   try {
     for (const key of Object.keys(localStorage))

@@ -17,6 +17,7 @@ model Group {
   createdAt DateTime @default(now()) @map("created_at")
   members   Member[]
   expenses  Expense[]
+  invites GroupInvite[]
   @@map("groups")
 }
 
@@ -36,7 +37,7 @@ model Member {
   @@unique([groupId, name])
   @@unique([groupId, userId])
   @@index([groupId])
-  @@map("members")
+  @@map("group_members")
 }
 
 model Expense {
@@ -81,6 +82,7 @@ model User {
   groups Group[] @relation("GroupOwner")
   memberships Member[]
   sessions Session[]
+  invites GroupInvite[]
   @@index([demoExpiresAt])
   @@map("users")
 }
@@ -100,4 +102,20 @@ model AuthAttempt {
   windowStart DateTime @map("window_start")
   lockedUntil DateTime? @map("locked_until")
   @@map("auth_attempts")
+}
+
+model GroupInvite {
+ id String @id @default(cuid())
+ groupId String @map("group_id")
+ code String @unique
+ createdBy String @map("created_by")
+ expiresAt DateTime @map("expires_at")
+ maxUses Int? @map("max_uses")
+ uses Int @default(0)
+ revoked Boolean @default(false)
+ createdAt DateTime @default(now()) @map("created_at")
+ group Group @relation(fields:[groupId],references:[id],onDelete:Cascade)
+ creator User @relation(fields:[createdBy],references:[id],onDelete:Restrict)
+ @@index([groupId])
+ @@map("group_invites")
 }

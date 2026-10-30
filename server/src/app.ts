@@ -2,6 +2,8 @@ import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
 import { rateLimit } from "express-rate-limit";
 import type { PrismaClient } from "@prisma/client";
+import { createGroupsRouter, removeGroupMember } from "./groups.js";
+import { updateOwnProfile } from "./auth.js";
 import { createAuth } from "./auth.js";
 import { HttpError } from "./errors.js";
 import { createService, memberDto } from "./service.js";
@@ -37,6 +39,7 @@ export function createApp(
     groupCode?: string;
     parseLimit?: number;
     reminderLimit?: number;
+    joinLimit?: number;
   } = {},
 ) {
   const app = express();
@@ -73,6 +76,11 @@ export function createApp(
     const session = await auth.session(req);
     if (!session) throw new HttpError(401, "Please sign in.");
     res.locals.session = session;
+    next();
+  });
+  app.use("/api/groups", createGroupsRouter(db, options.joinLimit));
+  app.use("/api", async (_req, res, next) => {
+    const session = res.locals.session;
     const member = session.activeGroupId
       ? await db.member.findFirst({
           where: { groupId: session.activeGroupId, userId: session.userId, status: "active" },
@@ -95,7 +103,14 @@ export function createApp(
     await db.$queryRaw`SELECT 1`;
     res.json({ status: "ok" });
   });
-  app.get("/api/group", async (_req, res) => send(res, groupSchema, await scoped(res).getGroup()));
+  app.get("/api/group", async (_req, res) =>
+    send(res, groupSchema, {
+      ...(await scoped(res).getGroup()),
+      myMemberId: res.locals.membership.id,
+      myRole: res.locals.membership.role,
+      requireApproval: res.locals.membership.group.requireApproval,
+    }),
+  );
   app.post(
     "/api/parse",
     rateLimit({
@@ -111,7 +126,11 @@ export function createApp(
       send(
         res,
         parsedResponseSchema,
-        await parseExpenses(input, g.members.map(memberDto), options.complete),
+        await parseExpenses(
+          { ...input, speaker: input.speaker ?? res.locals.membership.name },
+          g.members.filter((m) => m.status === "active").map(memberDto),
+          options.complete,
+        ),
       );
     },
   );
@@ -180,18 +199,27 @@ export function createApp(
       );
     },
   );
-  app.post("/api/members", async (req, res) =>
-    send(res, memberSchema, await scoped(res).addMember(memberInput.parse(req.body)), 201),
-  );
-  app.patch("/api/members/:id", async (req, res) =>
-    send(
-      res,
-      memberSchema,
-      await scoped(res).updateMember(req.params.id as string, memberPatch.parse(req.body)),
-    ),
-  );
+  app.post("/api/members", async (req, _res) => {
+    memberInput.parse(req.body);
+    throw new HttpError(409, "Use an invite code to add a registered account.");
+  });
+  app.patch("/api/members/:id", async (req, res) => {
+    if (req.params.id !== res.locals.membership.id)
+      throw new HttpError(403, "Group access unavailable.");
+    const input = memberPatch.parse(req.body);
+    if (input.id && input.id !== req.params.id)
+      throw new HttpError(400, "Member ID cannot be changed.");
+    await updateOwnProfile(db, res.locals.session.userId, { name: input.name, upiId: input.upiId });
+    const member = await db.member.findUniqueOrThrow({ where: { id: res.locals.membership.id } });
+    send(res, memberSchema, memberDto(member));
+  });
   app.delete("/api/members/:id", async (req, res) => {
-    await scoped(res).removeMember(req.params.id as string);
+    await removeGroupMember(
+      db,
+      res.locals.membership.groupId,
+      res.locals.session.userId,
+      req.params.id as string,
+    );
     res.status(204).end();
   });
   app.use((_req, res) => {

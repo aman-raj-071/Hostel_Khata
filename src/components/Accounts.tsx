@@ -2,7 +2,12 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getSession, login, signup, tryDemo, logout, updateProfile } from "@/lib/api";
-import { AccountContext, useAccount, clearPrivateDrafts } from "@/lib/account-context";
+import {
+  AccountContext,
+  useAccount,
+  clearPrivateDrafts,
+  safeAccountNext,
+} from "@/lib/account-context";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,15 +91,23 @@ export function AccountGate({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const session = query.data ?? null;
+  const isJoin = pathname.startsWith("/join/");
   const publicPath = pathname === "/" || pathname === "/login" || pathname === "/signup";
   useEffect(() => {
     if (query.isPending || query.isError) return;
-    if (!session?.user && !publicPath) void navigate({ to: "/login", replace: true });
-    else if (session?.user && (pathname === "/login" || pathname === "/signup"))
+    if (!session?.user && !publicPath) {
+      if (isJoin) window.location.replace("/login?next=" + encodeURIComponent(pathname));
+      else void navigate({ to: "/login", replace: true });
+    } else if (session?.user && (pathname === "/login" || pathname === "/signup"))
       void navigate({ to: session.activeGroupId ? "/" : "/groups", replace: true });
-    else if (session?.user && !session.activeGroupId && !["/groups", "/profile"].includes(pathname))
+    else if (
+      session?.user &&
+      !session.activeGroupId &&
+      !["/groups", "/profile"].includes(pathname) &&
+      !isJoin
+    )
       void navigate({ to: "/groups", replace: true });
-  }, [query.isPending, query.isError, session, publicPath, pathname, navigate]);
+  }, [query.isPending, query.isError, session, publicPath, pathname, navigate, isJoin]);
   const value = { session, loading: query.isPending, error: query.error, refresh: query.refetch };
   if (query.isPending)
     return (
@@ -114,7 +127,7 @@ export function AccountGate({ children }: { children: ReactNode }) {
         <PublicShell>
           {pathname === "/" ? <Landing /> : publicPath ? children : <p>Redirecting to Login…</p>}
         </PublicShell>
-      ) : pathname === "/groups" || pathname === "/profile" ? (
+      ) : pathname === "/groups" || pathname === "/profile" || isJoin ? (
         <PublicShell>{children}</PublicShell>
       ) : session.activeGroupId ? (
         <AppShell>{children}</AppShell>
@@ -203,7 +216,7 @@ export function AccountForm({ kind }: { kind: "login" | "signup" }) {
             if (kind === "signup") await signup(name, email, password);
             else await login(email, password);
             clearPrivateDrafts();
-            window.location.assign("/");
+            window.location.assign(safeAccountNext(window.location.search));
           } catch (e) {
             setError(e instanceof Error ? e.message : "Could not sign in");
             setBusy(false);
@@ -259,7 +272,14 @@ export function AccountForm({ kind }: { kind: "login" | "signup" }) {
       </form>
       <div className="mt-5 flex flex-wrap items-center gap-4">
         <DemoButton />
-        <Link to={kind === "signup" ? "/login" : "/signup"} className="text-sm text-primary">
+        <Link
+          to={kind === "signup" ? "/login" : "/signup"}
+          search={{
+            next:
+              typeof window === "undefined" ? undefined : safeAccountNext(window.location.search),
+          }}
+          className="text-sm text-primary"
+        >
           {kind === "signup" ? "Already registered? Login" : "New here? Sign up"}
         </Link>
       </div>

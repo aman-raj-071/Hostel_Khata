@@ -1,5 +1,5 @@
 import type { Member } from "../../src/lib/types.js";
-const cleanName = (name: string) =>
+export const cleanName = (name: string) =>
   name
     .toLocaleLowerCase()
     .normalize("NFKC")

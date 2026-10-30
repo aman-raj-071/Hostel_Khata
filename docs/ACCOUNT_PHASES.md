@@ -25,3 +25,9 @@ Try demo creates a private five-person group with 25 expenses, isolated per sess
 Cookie-dependent requests include credentials; writes require an allowed Origin. All legacy app endpoints now resolve group scope from the authenticated active membership. Unknown/removed access is generic.
 
 Verification: frontend 35/35; backend 61/61; real HTTP integration 10/10 (four account/session/demo tests plus six financial-flow cases). Final four auth cases also passed after atomic lockout/profile normalization. Frontend production build, root/server types and lint passed. Browser contexts A/B created different private demo group IDs, anonymous group access returned 401, session cookie was not JavaScript-readable and browser storage contained no login token.
+
+## Phase 3 result
+
+Private group onboarding, random expiring invites, pending approval, multi-group switching and complete admin/leave controls are implemented. Removed memberships retain history; all ledger endpoints enforce authenticated active membership. Legacy manual member creation now directs users to invitations. Existing database records are preserved.
+
+Verification: 16/16 HTTP integration tests and 61/61 backend unit tests passed. Root/server TypeScript, lint (zero errors) and both production builds passed. Frontend test runner was invoked but its worker stalled on this host; targeted rerun is tracked for final verification. See PRIVATE_GROUPS.md for scope and manual checks.

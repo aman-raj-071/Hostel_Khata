@@ -31,6 +31,10 @@ export const memberSchema = z.object({
   id: idSchema,
   name: nameSchema,
   upiId: z.string().optional(),
+  userId: idSchema.nullable().optional(),
+  role: z.enum(["admin", "member"]).optional(),
+  status: z.enum(["active", "pending", "removed"]).optional(),
+  color: z.string().optional(),
 });
 export const upiSchema = z
   .string()
@@ -95,6 +99,9 @@ export const groupSchema = z.object({
   id: idSchema,
   name: nameSchema,
   members: z.array(memberSchema),
+  myMemberId: idSchema.optional(),
+  myRole: z.enum(["admin", "member"]).optional(),
+  requireApproval: z.boolean().optional(),
 });
 export const balancesSchema = z.array(z.object({ memberId: idSchema, net: z.number().finite() }));
 export const settlementsSchema = z.array(
@@ -170,3 +177,25 @@ export const profileInput = z
   .object({ name: nameSchema.optional(), upiId: upiSchema.optional() })
   .strict()
   .refine((v) => Object.keys(v).length > 0, "Provide profile fields");
+
+export const groupSummarySchema = z.object({
+  id: idSchema,
+  name: nameSchema,
+  role: z.enum(["admin", "member"]),
+  status: z.enum(["active", "pending"]),
+  myMemberId: idSchema,
+  requireApproval: z.boolean(),
+});
+export const inviteSchema = z.object({
+  id: idSchema,
+  code: z.string(),
+  expiresAt: z.string(),
+  maxUses: z.number().nullable(),
+  uses: z.number(),
+  revoked: z.boolean(),
+});
+export const groupCreationSchema = z.object({ groupId: idSchema, invite: inviteSchema });
+export const groupJoinSchema = z.object({
+  groupId: idSchema,
+  status: z.enum(["active", "pending"]),
+});

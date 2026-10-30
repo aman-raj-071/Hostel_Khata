@@ -2,6 +2,10 @@ export interface Member {
   id: string;
   name: string;
   upiId?: string;
+  userId?: string | null;
+  role?: "admin" | "member";
+  status?: "active" | "pending" | "removed";
+  color?: string;
 }
 
 export type Category = "food" | "rent" | "utilities" | "travel" | "groceries" | "other";
@@ -46,6 +50,9 @@ export interface Group {
   id: string;
   name: string;
   members: Member[];
+  myMemberId?: string;
+  myRole?: "admin" | "member";
+  requireApproval?: boolean;
 }
 
 export interface Report {

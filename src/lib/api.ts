@@ -25,6 +25,10 @@ import {
   wrappedSchema,
   sessionSchema,
   userSchema,
+  groupSummarySchema,
+  inviteSchema,
+  groupCreationSchema,
+  groupJoinSchema,
 } from "./contracts";
 import { getDraftSource } from "./draft";
 
@@ -131,3 +135,63 @@ export const tryDemo = (): Promise<AccountSession> =>
   request("/api/auth/demo", sessionSchema, "POST", {});
 export const updateProfile = (data: { name?: string; upiId?: string }): Promise<Account> =>
   request("/api/auth/profile", userSchema, "PATCH", data);
+
+export type GroupSummary = z.infer<typeof groupSummarySchema>;
+export type GroupInvite = z.infer<typeof inviteSchema>;
+export const listGroups = (): Promise<GroupSummary[]> =>
+  request("/api/groups", z.array(groupSummarySchema));
+export const createGroup = (name: string): Promise<z.infer<typeof groupCreationSchema>> =>
+  request("/api/groups", groupCreationSchema, "POST", { name });
+export const joinGroup = (code: string): Promise<z.infer<typeof groupJoinSchema>> =>
+  request("/api/groups/join", groupJoinSchema, "POST", { code });
+export const selectGroup = (id: string): Promise<void> =>
+  request("/api/groups/" + encodeURIComponent(id) + "/select", z.void(), "POST", {});
+export const listGroupMembers = (id: string): Promise<Member[]> =>
+  request("/api/groups/" + encodeURIComponent(id) + "/members", z.array(memberSchema));
+export const listInvites = (id: string): Promise<GroupInvite[]> =>
+  request("/api/groups/" + encodeURIComponent(id) + "/invites", z.array(inviteSchema));
+export const regenerateInvite = (
+  id: string,
+  options: { expiresAt?: string; maxUses?: number | null },
+): Promise<GroupInvite> =>
+  request("/api/groups/" + encodeURIComponent(id) + "/invites", inviteSchema, "POST", options);
+export const revokeInvite = (id: string, inviteId: string): Promise<void> =>
+  request(
+    "/api/groups/" + encodeURIComponent(id) + "/invites/" + encodeURIComponent(inviteId),
+    z.void(),
+    "DELETE",
+  );
+export const setGroupApproval = (id: string, requireApproval: boolean): Promise<void> =>
+  request("/api/groups/" + encodeURIComponent(id) + "/settings", z.void(), "PATCH", {
+    requireApproval,
+  });
+export const decideMember = (
+  id: string,
+  memberId: string,
+  decision: "approve" | "reject",
+): Promise<void> =>
+  request(
+    "/api/groups/" +
+      encodeURIComponent(id) +
+      "/members/" +
+      encodeURIComponent(memberId) +
+      "/" +
+      decision,
+    z.void(),
+    "POST",
+    {},
+  );
+export const removeGroupMember = (id: string, memberId: string): Promise<void> =>
+  request(
+    "/api/groups/" + encodeURIComponent(id) + "/members/" + encodeURIComponent(memberId),
+    z.void(),
+    "DELETE",
+  );
+export const leaveGroup = (id: string): Promise<void> =>
+  request("/api/groups/" + encodeURIComponent(id) + "/leave", z.void(), "POST", {});
+export const transferAdmin = (id: string, memberId: string): Promise<void> =>
+  request("/api/groups/" + encodeURIComponent(id) + "/transfer-admin", z.void(), "POST", {
+    memberId,
+  });
+export const deleteGroup = (id: string): Promise<void> =>
+  request("/api/groups/" + encodeURIComponent(id), z.void(), "DELETE");
