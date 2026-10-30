@@ -31,6 +31,7 @@ server/prisma/schema.sqlite.prisma
 .dev.vars
 
 # Editor directories and files
+.serena/
 .vscode/*
 !.vscode/extensions.json
 .idea
