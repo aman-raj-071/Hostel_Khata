@@ -5,11 +5,13 @@ import { indiaToday } from "../src/parser.js";
 const db = createDb();
 try {
   const code = process.env.GROUP_CODE || "flat-302";
-  if (await db.group.findUnique({ where: { code } })) {
-    console.log("Group already exists; seed skipped to preserve user data.");
-  } else {
-    await db.$transaction(async (tx) => {
-      const group = await tx.group.create({ data: { name: "Flat 302", code } });
+  await db.$transaction(
+    async (tx) => {
+      const group = await tx.group.upsert({
+        where: { code },
+        update: {},
+        create: { name: "Flat 302", code },
+      });
       const names = ["Kabir", "Aman", "Riya", "Dev", "Sneha"];
       const upis = [
         "kabir@okaxis",
@@ -21,7 +23,11 @@ try {
       const members = [];
       for (let i = 0; i < names.length; i++)
         members.push(
-          await tx.member.create({ data: { groupId: group.id, name: names[i]!, upiId: upis[i]! } }),
+          await tx.member.upsert({
+            where: { groupId_name: { groupId: group.id, name: names[i]! } },
+            update: {},
+            create: { groupId: group.id, name: names[i]!, upiId: upis[i]! },
+          }),
         );
       const all = [0, 1, 2, 3, 4];
       const rows: [number, number, string, string, number, number[], string][] = [
@@ -85,13 +91,73 @@ try {
           "Kabir ne pizza 520 mangaya Sneha nahi thi",
         ],
         [1, 200, "Paani ke cans", "utilities", 1, all, "Aman ne paani 200 ka liya"],
+        [
+          0,
+          6200,
+          "Month-start house supplies",
+          "groceries",
+          29,
+          all,
+          "Kabir ne ghar ka samaan 6200 ka liya sabke liye",
+        ],
+        [1, 100, "Tapri chai", "food", 28, all, "Aman ne tapri chai 100 ki sabko pilayi"],
+        [2, 80, "Coffee after class", "food", 27, [1, 2], "Riya ne Aman ke saath coffee 80 ki"],
+        [0, 3500, "Gang dinner", "food", 26, all, "Kabir ne poori gang ka dinner 3500 pay kiya"],
+        [4, 240, "Sabzi mandi", "groceries", 25, all, "Sneha sabzi 240 ki laayi sabke liye"],
+        [
+          3,
+          180,
+          "Auto from campus",
+          "travel",
+          24,
+          [0, 3, 4],
+          "Dev ne auto 180 diya Kabir Sneha ke saath",
+        ],
+        [1, 125, "Chai break", "food", 23, all, "Aman ne sabke liye chai 125 ki li"],
+        [2, 450, "Atta and dal", "groceries", 22, all, "Riya ne atta dal 450 ka liya sabke liye"],
+        [
+          0,
+          800,
+          "Cleaning supplies",
+          "other",
+          21,
+          all,
+          "Kabir ne cleaning ka samaan 800 ka liya sabke liye",
+        ],
+        [4, 220, "Breakfast poha", "food", 20, all, "Sneha ne poha 220 ka mangaya sabke liye"],
+        [1, 100, "Evening chai", "food", 18, all, "Aman ne shaam ki chai 100 pay ki sabke liye"],
+        [
+          3,
+          450,
+          "Ola to movie",
+          "travel",
+          16,
+          [1, 2, 3],
+          "Dev ne Ola 450 pay ki Aman Riya ke saath",
+        ],
+        [
+          2,
+          399,
+          "Shared extension board",
+          "other",
+          0,
+          all,
+          "Riya ne extension board 399 ka liya sabke liye",
+        ],
       ];
-      for (const [payer, amount, description, category, days, people, rawText] of rows) {
+      for (const [
+        index,
+        [payer, amount, description, category, days, people, rawText],
+      ] of rows.entries()) {
+        if (await tx.expense.findFirst({ where: { groupId: group.id, rawText } })) continue;
         const payerId = members[payer]!.id;
         const date = new Date(indiaToday() + "T12:00:00Z");
         date.setUTCDate(date.getUTCDate() - days);
-        await tx.expense.create({
-          data: {
+        await tx.expense.upsert({
+          where: { id: `demo-${group.id}-${index}` },
+          update: {},
+          create: {
+            id: `demo-${group.id}-${index}`,
             groupId: group.id,
             payerId,
             amountPaise: toPaise(amount),
@@ -109,11 +175,12 @@ try {
           },
         });
       }
-    });
-    console.log(
-      "Seeded Flat 302: 5 members and 12 expenses. UPI IDs are examples, not verified payment addresses.",
-    );
-  }
+    },
+    { timeout: 60000 },
+  );
+  console.log(
+    "Seeded Flat 302: 5 members and 25 expenses over 30 days. Existing data preserved. UPI IDs are examples, not verified payment addresses.",
+  );
 } finally {
   await db.$disconnect();
 }

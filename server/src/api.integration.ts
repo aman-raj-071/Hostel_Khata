@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { createDb } from "./db.js";
@@ -63,6 +66,55 @@ afterAll(async () => {
 });
 
 describe("real HTTP + Prisma flow", () => {
+  it("generates scoped reminder tones without saving or changing balances", async () => {
+    const group = (await call("/api/group")).data;
+    const input = {
+      fromId: group.members[0].id,
+      toId: group.members[1].id,
+      amount: 340.51,
+      tone: "polite",
+    };
+    const before = (await call("/api/balances")).data;
+    for (const tone of ["polite", "filmy", "mummy", "savage"]) {
+      const result = await call("/api/reminder", "POST", { ...input, tone });
+      expect(result.status).toBe(200);
+      expect(result.data.message).toContain("₹340.51");
+      expect(result.data.message).toContain(group.members[0].name);
+      expect(result.data.message).toContain(group.members[1].name);
+      expect(result.data.message).toContain("UPI");
+    }
+    expect((await call("/api/balances")).data).toEqual(before);
+    expect((await call("/api/expenses")).data).toHaveLength(0);
+    expect((await call("/api/reminder", "POST", { ...input, fromId: outsiderId })).status).toBe(
+      422,
+    );
+    expect((await call("/api/reminder", "POST", { ...input, amount: 0 })).status).toBe(400);
+    expect((await call("/api/reminder", "POST", { ...input, amount: 1.001 })).status).toBe(400);
+    expect((await call("/api/reminder", "POST", { ...input, tone: "abusive" })).status).toBe(400);
+    vi.stubEnv("USE_CLAUDE_STUB", "false");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    expect(await call("/api/reminder", "POST", input)).toEqual({
+      status: 503,
+      data: { error: "ANTHROPIC_API_KEY not configured" },
+    });
+    vi.stubEnv("USE_CLAUDE_STUB", "true");
+    const limited = createApp(db, { groupCode: code, reminderLimit: 1 }).listen(0, "127.0.0.1");
+    await new Promise<void>((resolve) => limited.on("listening", resolve));
+    try {
+      const url = `http://127.0.0.1:${(limited.address() as AddressInfo).port}/api/reminder`;
+      const request = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      };
+      expect((await fetch(url, request)).status).toBe(200);
+      const blocked = await fetch(url, request);
+      expect(blocked.status).toBe(429);
+      expect((await blocked.json()).error).toContain("wait a minute");
+    } finally {
+      await new Promise<void>((resolve) => limited.close(() => resolve()));
+    }
+  });
   it("parse → confirm → save → edit → balances → record settlement → report", async () => {
     expect((await call("/health")).status).toBe(200);
     const g = (await call("/api/group")).data;
@@ -168,6 +220,46 @@ describe("real HTTP + Prisma flow", () => {
     });
     vi.stubEnv("USE_CLAUDE_STUB", "true");
   });
+  it("returns computed, cached Wrapped stories without cross-group members", async () => {
+    const group = (await call("/api/group")).data;
+    const date = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
+    const parsed = {
+      payer: group.members[0].name,
+      amount: 90.01,
+      description: "Chai",
+      category: "food",
+      date,
+      splitType: "equal",
+      participants: [group.members[0].name, group.members[1].name],
+      shares: [],
+      confidence: 1,
+      needsClarification: false,
+      question: null,
+    };
+    const saved = await call("/api/expenses", "POST", {
+      expenses: [parsed, { ...parsed, description: "Gang dinner", amount: 999 }],
+    });
+    expect(saved.status).toBe(201);
+    try {
+      const path = `/api/wrapped?month=${date.slice(0, 7)}`;
+      const first = await call(path);
+      expect(first.status).toBe(200);
+      expect(first.data.total).toBe(1089.01);
+      expect(first.data.biggestExpense.amount).toBe(999);
+      expect(first.data.awards).toHaveLength(5);
+      expect(
+        first.data.awards.some((award: { memberId: string }) => award.memberId === outsiderId),
+      ).toBe(false);
+      expect(await call(path)).toEqual(first);
+      expect((await call("/api/wrapped?month=2026-99")).status).toBe(400);
+      vi.stubEnv("USE_CLAUDE_STUB", "false");
+      vi.stubEnv("ANTHROPIC_API_KEY", "");
+      expect((await call(path)).status).toBe(503);
+    } finally {
+      vi.stubEnv("USE_CLAUDE_STUB", "true");
+      for (const expense of saved.data) await call(`/api/expenses/${expense.id}`, "DELETE");
+    }
+  });
   it("checks CORS, consistent JSON errors and parse rate limits", async () => {
     const response = await fetch(base + "/api/group", {
       headers: { Origin: "http://127.0.0.1:8080" },
@@ -198,5 +290,44 @@ describe("real HTTP + Prisma flow", () => {
       await new Promise<void>((resolve) => limited.close(() => resolve()));
     }
     expect((await service.getGroup()).id).toBe(groupId);
+  });
+  it("seeds 25 demo entries idempotently without overwriting member settings", async () => {
+    const seedCode = `seed-${randomUUID()}`;
+    const seed = () =>
+      promisify(execFile)(
+        process.execPath,
+        [
+          fileURLToPath(new URL("../node_modules/tsx/dist/cli.mjs", import.meta.url)),
+          "--env-file-if-exists=.env",
+          "prisma/seed.ts",
+        ],
+        { cwd: process.cwd(), env: { ...process.env, GROUP_CODE: seedCode }, timeout: 20000 },
+      );
+    try {
+      await seed();
+      const seeded = await db.group.findUniqueOrThrow({
+        where: { code: seedCode },
+        include: { members: true, expenses: true },
+      });
+      expect(seeded.members).toHaveLength(5);
+      expect(seeded.expenses).toHaveLength(25);
+      expect(new Set(seeded.expenses.map((expense) => expense.date)).size).toBeGreaterThan(20);
+      await db.member.update({
+        where: { id: seeded.members[0]!.id },
+        data: { upiId: "custom@ybl" },
+      });
+      await seed();
+      expect(await db.expense.count({ where: { groupId: seeded.id } })).toBe(25);
+      expect(
+        (await db.member.findUniqueOrThrow({ where: { id: seeded.members[0]!.id } })).upiId,
+      ).toBe("custom@ybl");
+    } finally {
+      const seeded = await db.group.findUnique({ where: { code: seedCode } });
+      if (seeded) {
+        await db.expense.deleteMany({ where: { groupId: seeded.id } });
+        await db.member.deleteMany({ where: { groupId: seeded.id } });
+        await db.group.delete({ where: { id: seeded.id } });
+      }
+    }
   });
 });

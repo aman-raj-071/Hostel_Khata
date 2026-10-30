@@ -1,5 +1,19 @@
 # Hostel Khata
 
+For hostel and flatmate groups who lose shared chai, food, bills and repayments in chat noise. Speak a Hinglish expense, review the split and confirm it; see balances without login. Includes WhatsApp imports, voice navigation, paise rounding, UPI/QR, four reminder tones, reports and shareable Hostel Wrapped stories.
+
+Deployed frontend: **YOUR_VERCEL_URL**. Backend: **YOUR_RENDER_OR_RAILWAY_URL**. These are placeholders, not live deployments.
+
+Wispr Flow can dictate into the expense textarea, coding prompts, docs and commit-message fields. In-app voice uses browser SpeechRecognition; Wispr Flow remains the text-input fallback. Record your own use for the challenge: the app cannot verify which keyboard input was dictated.
+
+The expanded seed has 25 expenses over 30 days, including old net dues, chai, a big dinner, gas and WiFi. It adds missing demo entries without overwriting existing expenses, member settings or UPI IDs. `samples/chat.txt` contains 20 dated import examples; change dates for your demo month if needed.
+
+**Wrapped:** `/wrapped` has swipeable stories, awards and PNG export. `GET /api/wrapped?month=YYYY-MM` returns `{ total, awards, biggestExpense }`. Awards are computed in code; one Claude call supplies captions, or deterministic stub captions are used. Repayments affect net dues but not spending awards. Debt age uses FIFO net dues. A bounded process-local group/month cache invalidates on changed facts; restarts clear it and multiple instances need shared persistence.
+
+**Hands-free:** “wrapped dikhao”, “settle up kholo”, “reminder bhejo”, “haan theek hai” extend existing commands. Multiple reminders require the displayed button number. Unsupported browsers hide the mic and retain typed/Wispr input. Dictation treats commands as text until “likhna band”; saving and UPI payments still require confirmation.
+
+**Reminder tones:** on Settle, choose Send reminder → polite / filmy / mummy / savage → edit → Copy or Send on WhatsApp. WhatsApp opens a draft and lets you pick the recipient; no message is sent automatically. `POST /api/reminder` accepts `{ fromId, toId, amount, tone }`, returns `{ message }`, and permits 10 requests/minute/IP. Both members must be in the configured group, different, and the amount positive with at most two decimals. Missing UPI IDs prompt the creditor to share one. Stub mode has two deterministic variants per tone; Generate again returns the same text for the same payment/tone. Disable the stub and set the existing server key/model variables for real Claude. Wrapped is limited to 20 requests/minute/IP.
+
 Voice-first Hinglish expense splitting for a public demo group. The existing Lovable React/TypeScript/Tailwind frontend uses TanStack Start. `src/lib/api.ts` calls an Express API in `server/`; shared types remain in `src/lib/types.ts` and Zod contracts are in `src/lib/contracts.ts`.
 
 ## Local setup
@@ -14,7 +28,7 @@ npm run setup:server
 npm run dev
 ```
 
-PowerShell also supports `Copy-Item` instead of `cp`. The setup command installs backend packages, generates Prisma Client, initializes the database and seeds Flat 302 with Kabir, Aman, Riya, Dev, Sneha and 12 expenses from the last two weeks. Re-running seed preserves existing data. Seed UPI IDs are examples, **not verified payment addresses**.
+PowerShell also supports `Copy-Item` instead of `cp`. The setup command installs backend packages, generates Prisma Client, initializes the database and seeds Flat 302 with Kabir, Aman, Riya, Dev, Sneha and 25 expenses over the last 30 days. Re-running seed adds missing demo entries while preserving existing data. Seed UPI IDs are examples, **not verified payment addresses**.
 
 Frontend: <http://127.0.0.1:8080>. API: <http://127.0.0.1:3001>. Database health: <http://127.0.0.1:3001/health>.
 
@@ -139,7 +153,7 @@ This is TanStack Start, not a static SPA. Vite selects Nitro's `vercel` preset w
 
 Use Supabase/Neon PostgreSQL and the provider's SSL connection URL. Use a pooled runtime `DATABASE_URL` and direct `DIRECT_URL` for migrations if your provider requires it.
 
-Docker context: repository root. Dockerfile: `server/Dockerfile`. It includes the shared contracts/types. `render.yaml` supplies a blueprint, `/health` and a pre-deploy migration command. On Railway select this Dockerfile and use pre-deploy `npm run db:migrate` inside `/app/server`. The image starts with `npm start`, listening on `0.0.0.0:$PORT`.
+Docker context: repository root. Dockerfile: `server/Dockerfile`. It includes the shared contracts/types. `render.yaml` supplies a blueprint, `/health` and a pre-deploy migration command. On Railway select this Dockerfile and use pre-deploy `npm run db:migrate && npm run db:seed` inside `/app/server`. The image starts with `npm start`, listening on `0.0.0.0:$PORT`.
 
 Without Docker, from the repo root:
 

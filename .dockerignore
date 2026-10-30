@@ -7,3 +7,6 @@
 **/*.db-*
 server/prisma/schema.sqlite.prisma
 .output
+.vercel
+.verification-tmp
+.phase-final-lint.json
