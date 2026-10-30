@@ -173,22 +173,18 @@ describe("real HTTP + Prisma flow", () => {
     ).toHaveLength(1);
     const settlements: Settlement[] = (await call("/api/settlements")).data;
     expect(settlements).toHaveLength(2);
-    for (const s of settlements) {
-      const from = g.members.find((m: { id: string }) => m.id === s.fromId)!.name;
-      const to = g.members.find((m: { id: string }) => m.id === s.toId)!.name;
-      const repayment = await call("/api/parse", "POST", {
-        text: `${from} ne ${to} ko ${s.amount} bhej diye`,
-        mode: "brain-dump",
-      });
-      expect(repayment.data.expenses[0].description).toBe("Settlement");
-      expect((await call("/api/expenses", "POST", repayment.data)).status).toBe(201);
-    }
-    expect((await call("/api/balances")).data.every((b: { net: number }) => b.net === 0)).toBe(
-      true,
-    );
-    expect((await call("/api/settlements")).data).toEqual([]);
+    const s = settlements[0]!;
+    const from = g.members.find((m: { id: string }) => m.id === s.fromId)!.name;
+    const to = g.members.find((m: { id: string }) => m.id === s.toId)!.name;
+    const repayment = await call("/api/parse", "POST", {
+      text: from + " ne " + to + " ko " + s.amount + " bhej diye",
+      mode: "brain-dump",
+    });
+    expect(repayment.data.expenses[0].description).toBe("Settlement");
+    expect((await call("/api/expenses", "POST", repayment.data)).status).toBe(422);
+    expect((await call("/api/settlements")).data).toHaveLength(2);
     const report = (await call(`/api/report?month=${expenses[0].date.slice(0, 7)}`)).data;
-    expect(report.total).toBe(166.66);
+    expect(report.total).toBe(100);
     expect(report.summaryText).toContain("Integration group");
     expect(report.byMember).toHaveLength(5);
     for (const e of (await call("/api/expenses")).data)

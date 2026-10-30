@@ -82,6 +82,16 @@ export async function generateReminder(input: ReminderInput, members: Member[]) 
       throw new HttpError(502, "Couldn't generate the reminder. Please try again shortly.");
     }
   }
+  if (to.upiId) {
+    const params = new URLSearchParams({
+      pa: to.upiId,
+      pn: to.name,
+      am: data.amount.toFixed(2),
+      cu: "INR",
+      tn: "Hostel Khata",
+    });
+    message += "\nupi://pay?" + params.toString();
+  }
   const result = reminderSchema.safeParse({ message });
   if (!result.success)
     throw new HttpError(502, "Couldn't generate a short reminder. Please try again.");

@@ -29,6 +29,8 @@ import {
   inviteSchema,
   groupCreationSchema,
   groupJoinSchema,
+  paymentSchema,
+  paymentInput,
 } from "./contracts";
 import { getDraftSource } from "./draft";
 
@@ -195,3 +197,17 @@ export const transferAdmin = (id: string, memberId: string): Promise<void> =>
   });
 export const deleteGroup = (id: string): Promise<void> =>
   request("/api/groups/" + encodeURIComponent(id), z.void(), "DELETE");
+
+export type Payment = z.infer<typeof paymentSchema>;
+export type PaymentInput = z.infer<typeof paymentInput>;
+export const listPayments = (): Promise<Payment[]> =>
+  request("/api/payments", z.array(paymentSchema));
+export const claimPayment = (input: PaymentInput): Promise<Payment> =>
+  request("/api/payments", paymentSchema, "POST", input);
+export const receiveCash = (input: PaymentInput): Promise<Payment> =>
+  request("/api/payments/cash", paymentSchema, "POST", input);
+export const decidePayment = (
+  id: string,
+  action: "confirm" | "dispute" | "cancel",
+): Promise<Payment> =>
+  request("/api/payments/" + encodeURIComponent(id) + "/" + action, paymentSchema, "POST", {});

@@ -378,6 +378,14 @@ export function createGroupsRouter(db: PrismaClient, joinLimit = 10) {
           !members.some((m) => m.id !== actor.id && m.status === "active" && m.role === "admin")
         )
           throw new HttpError(409, "Transfer admin or delete the group before leaving.");
+        await tx.payment.updateMany({
+          where: {
+            groupId,
+            status: "pending",
+            OR: [{ fromUserId: current.userId }, { toUserId: current.userId }],
+          },
+          data: { status: "cancelled" },
+        });
         await tx.member.update({ where: { id: actor.id }, data: { status: "removed" } });
         await tx.session.updateMany({
           where: { userId: current.userId, activeGroupId: groupId },
@@ -415,6 +423,7 @@ export function createGroupsRouter(db: PrismaClient, joinLimit = 10) {
           where: { activeGroupId: groupId },
           data: { activeGroupId: null },
         });
+        await tx.payment.deleteMany({ where: { groupId } });
         await tx.expense.deleteMany({ where: { groupId } });
         await tx.member.deleteMany({ where: { groupId } });
         await tx.group.delete({ where: { id: groupId } });
@@ -440,6 +449,15 @@ export async function removeGroupMember(
         where: { id: memberId, groupId, status: { in: ["active", "pending"] } },
       });
       if (!target) throw unavailable();
+      if (target.userId)
+        await tx.payment.updateMany({
+          where: {
+            groupId,
+            status: "pending",
+            OR: [{ fromUserId: target.userId }, { toUserId: target.userId }],
+          },
+          data: { status: "cancelled" },
+        });
       await tx.member.update({ where: { id: memberId }, data: { status: "removed" } });
       if (target.userId)
         await tx.session.updateMany({

@@ -199,3 +199,25 @@ export const groupJoinSchema = z.object({
   groupId: idSchema,
   status: z.enum(["active", "pending"]),
 });
+
+export const paymentInput = z
+  .object({
+    fromUserId: idSchema,
+    toUserId: idSchema,
+    amount: moneySchema.refine((v) => v > 0, "Amount must be positive"),
+    upiRef: z.string().trim().max(100).optional(),
+    note: z.string().trim().max(500).optional(),
+  })
+  .strict();
+export const paymentSchema = z.object({
+  id: idSchema,
+  groupId: idSchema,
+  fromUserId: idSchema,
+  toUserId: idSchema,
+  amount: moneySchema.refine((v) => v > 0),
+  status: z.enum(["pending", "confirmed", "disputed", "cancelled"]),
+  upiRef: z.string().nullable(),
+  note: z.string(),
+  createdAt: z.string().datetime(),
+  confirmedAt: z.string().datetime().nullable(),
+});

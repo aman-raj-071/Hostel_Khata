@@ -1,5 +1,6 @@
 import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
+import { createPaymentsRouter } from "./payments.js";
 import { rateLimit } from "express-rate-limit";
 import type { PrismaClient } from "@prisma/client";
 import { createGroupsRouter, removeGroupMember } from "./groups.js";
@@ -134,6 +135,7 @@ export function createApp(
       );
     },
   );
+  app.use("/api/payments", createPaymentsRouter(db));
   app.post("/api/expenses", async (req, res) => {
     const body = saveInput.parse(req.body);
     send(res, z.array(expenseSchema), await scoped(res).save(body.expenses, body.rawText), 201);

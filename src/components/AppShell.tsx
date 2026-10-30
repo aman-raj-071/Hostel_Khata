@@ -14,6 +14,7 @@ import { DraftRecovery } from "@/components/DraftRecovery";
 import { GroupTools } from "@/components/GroupTools";
 import { GroupSwitcher } from "@/components/PrivateGroups";
 import { useAccount } from "@/lib/account-context";
+import { PaymentBell } from "@/components/PaymentInbox";
 import { AccountMenu } from "@/components/Accounts";
 
 const TABS = [
@@ -56,6 +57,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
         <div className="flex items-center gap-2">
           {session?.user && <GroupSwitcher />}
+          {session?.user && <PaymentBell />}
           <AccountMenu />
           <button
             aria-label={light ? "Switch to dark mode" : "Switch to light mode"}

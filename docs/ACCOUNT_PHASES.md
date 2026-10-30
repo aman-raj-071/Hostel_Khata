@@ -30,4 +30,10 @@ Verification: frontend 35/35; backend 61/61; real HTTP integration 10/10 (four a
 
 Private group onboarding, random expiring invites, pending approval, multi-group switching and complete admin/leave controls are implemented. Removed memberships retain history; all ledger endpoints enforce authenticated active membership. Legacy manual member creation now directs users to invitations. Existing database records are preserved.
 
-Verification: 16/16 HTTP integration tests and 61/61 backend unit tests passed. Root/server TypeScript, lint (zero errors) and both production builds passed. Frontend test runner was invoked but its worker stalled on this host; targeted rerun is tracked for final verification. See PRIVATE_GROUPS.md for scope and manual checks.
+Verification: 16/16 HTTP integration tests and 61/61 backend unit tests passed. Root/server TypeScript, lint (zero errors) and both production builds passed. Frontend test runner was invoked but its worker stalled on this host; targeted rerun passed 7/7 cases. Full rerun is tracked for final verification. See PRIVATE_GROUPS.md for scope and manual checks.
+
+## Phase 4 result
+
+UPI/QR, pending payer claims, receiver-only confirm/dispute, payer cancellation and receiver cash entries are complete. Payments are scoped by active membership; serializable confirmation creates one protected settlement. Overpayments and duplicate pending reservations fail. Membership removal cancels affected pending claims. The notification bell/inbox and reminder UPI links are connected. Demo addresses are clearly fictitious.
+
+Checks: 20/20 HTTP integration, 61/61 backend unit tests and 3/3 targeted payment UI tests passed. Root/server TypeScript, lint (zero errors) and production frontend/server builds passed. Full frontend test worker stalled; targeted payment tests passed using forks. Razorpay intentionally skipped. See PAYMENTS.md for the state machine and two-account test steps.

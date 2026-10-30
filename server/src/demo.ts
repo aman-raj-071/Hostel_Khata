@@ -18,6 +18,7 @@ export async function cleanupExpiredDemos(db: PrismaClient, now = new Date()) {
         select: { id: true },
       });
       const groupIds = groups.map((g) => g.id);
+      await tx.payment.deleteMany({ where: { groupId: { in: groupIds } } });
       await tx.expense.deleteMany({ where: { groupId: { in: groupIds } } });
       await tx.member.deleteMany({ where: { groupId: { in: groupIds } } });
       await tx.group.deleteMany({ where: { id: { in: groupIds } } });

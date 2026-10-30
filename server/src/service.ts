@@ -125,6 +125,11 @@ export function createService(db: PrismaClient, code = process.env.GROUP_CODE ||
         };
         const output: Expense[] = [];
         for (const p of parsed) {
+          if (p.description.trim().toLowerCase() === "settlement")
+            throw new HttpError(
+              422,
+              "Record repayments in Settle. The receiver must confirm receipt.",
+            );
           if (p.needsClarification)
             throw new HttpError(422, p.question || "Please confirm every expense before saving.");
           if (p.amount <= 0) throw new HttpError(422, "Enter a positive amount before saving.");
@@ -198,6 +203,10 @@ export function createService(db: PrismaClient, code = process.env.GROUP_CODE ||
           include: { shares: true },
         });
         if (!current) throw new HttpError(404, "Expense not found");
+        if (await tx.payment.count({ where: { groupId: g.id, settlementExpenseId: id } }))
+          throw new HttpError(409, "Confirmed payments cannot be edited.");
+        if (patch.description?.trim().toLowerCase() === "settlement")
+          throw new HttpError(422, "Record repayments in Settle with receiver confirmation.");
         if (patch.id && patch.id !== id) throw new HttpError(400, "Expense ID cannot be changed");
         const next = expenseSchema.parse({ ...expenseDto(current), ...patch, id });
         const previous = expenseDto(current);
@@ -236,6 +245,8 @@ export function createService(db: PrismaClient, code = process.env.GROUP_CODE ||
     },
     async deleteExpense(id: string) {
       const g = await group();
+      if (await db.payment.count({ where: { groupId: g.id, settlementExpenseId: id } }))
+        throw new HttpError(409, "Confirmed payments cannot be deleted.");
       const result = await db.expense.deleteMany({ where: { id, groupId: g.id } });
       if (!result.count) throw new HttpError(404, "Expense not found");
     },

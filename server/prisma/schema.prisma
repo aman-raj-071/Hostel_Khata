@@ -18,6 +18,7 @@ model Group {
   members   Member[]
   expenses  Expense[]
   invites GroupInvite[]
+  paymentRecords Payment[]
   @@map("groups")
 }
 
@@ -53,6 +54,7 @@ model Expense {
   group       Group @relation(fields: [groupId], references: [id], onDelete: Restrict)
   payer       Member @relation(fields: [payerId], references: [id], onDelete: Restrict)
   shares      ExpenseShare[]
+  settlement Payment?
   @@index([groupId, date])
   @@index([payerId])
   @@map("expenses")
@@ -83,6 +85,8 @@ model User {
   memberships Member[]
   sessions Session[]
   invites GroupInvite[]
+  sentPayments Payment[] @relation("PaymentSender")
+  receivedPayments Payment[] @relation("PaymentReceiver")
   @@index([demoExpiresAt])
   @@map("users")
 }
@@ -118,4 +122,24 @@ model GroupInvite {
  creator User @relation(fields:[createdBy],references:[id],onDelete:Restrict)
  @@index([groupId])
  @@map("group_invites")
+}
+
+model Payment {
+ id String @id @default(cuid())
+ groupId String @map("group_id")
+ fromUserId String @map("from_user_id")
+ toUserId String @map("to_user_id")
+ amountPaise Int @map("amount_paise")
+ status String @default("pending")
+ upiRef String? @map("upi_ref")
+ note String @default("")
+ createdAt DateTime @default(now()) @map("created_at")
+ confirmedAt DateTime? @map("confirmed_at")
+ settlementExpenseId String? @unique @map("settlement_expense_id")
+ group Group @relation(fields:[groupId],references:[id],onDelete:Restrict)
+ sender User @relation("PaymentSender",fields:[fromUserId],references:[id],onDelete:Restrict)
+ receiver User @relation("PaymentReceiver",fields:[toUserId],references:[id],onDelete:Restrict)
+ settlement Expense? @relation(fields:[settlementExpenseId],references:[id],onDelete:Restrict)
+ @@index([groupId,status])
+ @@map("payments")
 }

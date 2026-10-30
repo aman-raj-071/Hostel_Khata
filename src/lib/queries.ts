@@ -2,9 +2,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "./api";
 
 export const useGroup = () => useQuery({ queryKey: ["group"], queryFn: api.getGroup });
-export const useBalances = () => useQuery({ queryKey: ["balances"], queryFn: api.getBalances });
+export const useBalances = () =>
+  useQuery({ queryKey: ["balances"], queryFn: api.getBalances, refetchInterval: 15000 });
 export const useSettlements = () =>
-  useQuery({ queryKey: ["settlements"], queryFn: api.getSettlements });
+  useQuery({ queryKey: ["settlements"], queryFn: api.getSettlements, refetchInterval: 15000 });
 export const useExpenses = (f: Parameters<typeof api.listExpenses>[0] & object) =>
   useQuery({ queryKey: ["expenses", f], queryFn: () => api.listExpenses(f) });
 export const useReport = (month: string) =>
