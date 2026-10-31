@@ -1,5 +1,6 @@
 import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { createPaymentsRouter } from "./payments.js";
 import { rateLimit } from "express-rate-limit";
 import type { PrismaClient } from "@prisma/client";
@@ -15,6 +16,7 @@ import {
   z,
   ZodError,
   balancesSchema,
+  idSchema,
   expensePatch,
   expenseSchema,
   filtersSchema,
@@ -37,7 +39,6 @@ export function createApp(
   db: PrismaClient,
   options: {
     complete?: Completion;
-    groupCode?: string;
     parseLimit?: number;
     reminderLimit?: number;
     joinLimit?: number;
@@ -48,6 +49,9 @@ export function createApp(
   const scoped = (res: express.Response) => res.locals.service as ReturnType<typeof createService>;
   const wrapped = createWrappedCache();
   app.disable("x-powered-by");
+  app.use(
+    helmet({ strictTransportSecurity: process.env.NODE_ENV === "production" ? undefined : false }),
+  );
   if (process.env.TRUST_PROXY_HOPS) app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS));
   const origins = (process.env.CORS_ORIGIN || "http://127.0.0.1:8080,http://localhost:8080")
     .split(",")
@@ -117,6 +121,7 @@ export function createApp(
     rateLimit({
       windowMs: 60000,
       limit: options.parseLimit ?? 10,
+      keyGenerator: (_req, res) => res.locals.session.userId,
       standardHeaders: "draft-8",
       legacyHeaders: false,
       message: { error: "Too many parsing requests. Please wait a minute." },
@@ -145,6 +150,7 @@ export function createApp(
     rateLimit({
       windowMs: 60000,
       limit: options.reminderLimit ?? 10,
+      keyGenerator: (_req, res) => res.locals.session.userId,
       standardHeaders: "draft-8",
       legacyHeaders: false,
       message: { error: "Too many reminder requests. Please wait a minute." },
@@ -162,11 +168,11 @@ export function createApp(
     send(
       res,
       expenseSchema,
-      await scoped(res).updateExpense(req.params.id as string, expensePatch.parse(req.body)),
+      await scoped(res).updateExpense(idSchema.parse(req.params.id), expensePatch.parse(req.body)),
     ),
   );
   app.delete("/api/expenses/:id", async (req, res) => {
-    await scoped(res).deleteExpense(req.params.id as string);
+    await scoped(res).deleteExpense(idSchema.parse(req.params.id));
     res.status(204).end();
   });
   app.get("/api/balances", async (_req, res) =>
@@ -187,6 +193,7 @@ export function createApp(
     rateLimit({
       windowMs: 60000,
       limit: 20,
+      keyGenerator: (_req, res) => res.locals.session.userId,
       standardHeaders: "draft-8",
       legacyHeaders: false,
       message: { error: "Too many Wrapped requests. Please wait a minute." },
@@ -220,7 +227,7 @@ export function createApp(
       db,
       res.locals.membership.groupId,
       res.locals.session.userId,
-      req.params.id as string,
+      idSchema.parse(req.params.id),
     );
     res.status(204).end();
   });

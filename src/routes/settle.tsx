@@ -102,15 +102,13 @@ function SettlePage() {
                 <div className="mt-3 flex flex-wrap gap-2">
                   {to.upiId && !session?.user?.demoExpiresAt ? (
                     <>
-                      <Button
-                        asChild
-                        className="h-12 flex-1 rounded-xl md:order-2"
-                        disabled={from.userId !== session?.user?.id}
-                      >
-                        <a href={link} aria-label={`Pay via UPI ${from.name} to ${to.name}`}>
-                          <Smartphone className="h-4 w-4" /> Pay via UPI
-                        </a>
-                      </Button>
+                      {from.userId === session?.user?.id && (
+                        <Button asChild className="h-12 flex-1 rounded-xl md:order-2">
+                          <a href={link} aria-label={`Pay via UPI ${from.name} to ${to.name}`}>
+                            <Smartphone className="h-4 w-4" /> Pay via UPI
+                          </a>
+                        </Button>
+                      )}
                       <Button
                         aria-label={`Show QR ${from.name} to ${to.name}`}
                         variant="outline"
@@ -135,7 +133,10 @@ function SettlePage() {
                         }
                       }}
                     >
-                      <Copy className="h-4 w-4" /> Ask {to.name} to add UPI ID
+                      <Copy className="h-4 w-4" />{" "}
+                      {session?.user?.demoExpiresAt
+                        ? "Copy demo payment message"
+                        : "Ask " + to.name + " to add UPI ID"}
                     </Button>
                   )}
                 </div>

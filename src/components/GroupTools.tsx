@@ -25,7 +25,9 @@ export function GroupTools() {
       const suggested = nextPayers(group, balances);
       setText(
         !suggested.length
-          ? "Sab barabar! Anyone can volunteer for the next shared buy."
+          ? balances.some((b) => b.net !== 0)
+            ? "No active member owes money. Previous members still have dues; check Balances."
+            : "Sab barabar! Anyone can volunteer for the next shared buy."
           : suggested.map((m) => m.name).join(" or ") +
               " could pay next. Current net dues: " +
               inr(suggested[0]!.owedPaise / 100) +

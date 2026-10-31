@@ -1,24 +1,25 @@
-> Current account upgrade: app endpoints now require a database session and active group membership. Use **Try demo** for an isolated 24-hour Flat 302 sandbox. Old shared seed data is preserved but never automatically assigned to new users. Group creation/invites and two-sided confirmations are the next implementation phases.
-
 # Hostel Khata
 
-For hostel and flatmate groups who lose shared chai, food, bills and repayments in chat noise. Speak a Hinglish expense, review the split and confirm it; share balances within your private group. Includes WhatsApp imports, paise rounding, UPI/QR, four reminder tones, reports and shareable Hostel Wrapped stories.
+Private expense splitting for hostel and flatmate groups in India. Dictate a Hinglish paragraph with **Wispr Flow**, check the parsed cards, save, see balances and settle directly through UPI. The app keeps the existing Lovable React/TypeScript/Tailwind design and uses TanStack Start, Express, Prisma and Zod.
 
-Deployed frontend: **YOUR_VERCEL_URL**. Backend: **YOUR_RENDER_OR_RAILWAY_URL**. These are placeholders, not live deployments.
+**Try demo** on the landing/login pages opens an isolated Flat 302 group with Kabir, Aman, Riya, Dev and Sneha and 25 realistic expenses over 30 days. Each demo expires after 24 hours; fictitious UPI addresses must never receive real money. No signup or Claude key is needed in stub mode.
 
-Wispr Flow can dictate into the expense textarea, coding prompts, docs and commit-message fields. Wispr Flow supplies text through ordinary field input. Record your own use for the challenge: the app cannot verify which keyboard input was dictated.
+## Core flow
 
-The expanded seed has 25 expenses over 30 days, including old net dues, chai, a big dinner, gas and WiFi. It adds missing demo entries without overwriting existing expenses, member settings or UPI IDs. `samples/chat.txt` contains 20 dated import examples; change dates for your demo month if needed.
+1. Sign up, create a private group, share its invite code/link.
+2. A second account joins; approval is on by default. Admin approves in Members.
+3. On Add, hold Fn using Wispr Flow and dictate into the large focused text field, or paste WhatsApp chat. The app receives ordinary text and never intercepts Fn. Ctrl/Cmd+Enter parses; Enter inserts a newline.
+4. Review every card, resolve questions and press Save all. Parsing never persists expenses.
+5. Check Balances / Settle. Scan the receiver QR (primary on desktop) or open their UPI link on mobile.
+6. Payer submits **I've paid**, optionally with UTR. Receiver verifies actual receipt, then **Confirm received**. Only then does the ledger change.
 
-**Wrapped:** `/wrapped` has swipeable stories, awards and PNG export. `GET /api/wrapped?month=YYYY-MM` returns `{ total, awards, biggestExpense }`. Awards are computed in code; one Claude call supplies captions, or deterministic stub captions are used. Repayments affect net dues but not spending awards. Debt age uses FIFO net dues. A bounded process-local group/month cache invalidates on changed facts; restarts clear it and multiple instances need shared persistence.
+Features also include expense history/editing, equal/exact/percent/itemized splits, recurring bill drafts, who-should-pay-next, four editable reminder tones with receiver UPI links, monthly WhatsApp reports, and Hostel Wrapped stories/PNG export. WhatsApp opens a draft; it never sends automatically.
 
-**Reminder tones:** on Settle, choose Send reminder → polite / filmy / mummy / savage → edit → Copy or Send on WhatsApp. WhatsApp opens a draft and lets you pick the recipient; no message is sent automatically. `POST /api/reminder` accepts `{ fromId, toId, amount, tone }`, returns `{ message }`, and permits 10 requests/minute/IP. Both members must be in the configured group, different, and the amount positive with at most two decimals. Missing UPI IDs prompt the creditor to share one. Stub mode has two deterministic variants per tone; Generate again returns the same text for the same payment/tone. Disable the stub and set the existing server key/model variables for real Claude. Wrapped is limited to 20 requests/minute/IP.
-
-Hinglish expense splitting for private groups. The existing Lovable React/TypeScript/Tailwind frontend uses TanStack Start. `src/lib/api.ts` calls an Express API in `server/`; shared types remain in `src/lib/types.ts` and Zod contracts are in `src/lib/contracts.ts`.
+Wispr Flow is the only dictation layer. No browser audio controls or command parser remain in runtime source. The app cannot prove whether text was dictated; record your own Wispr use for the challenge. Historical delivery reports remain archived as prior evidence, not current instructions.
 
 ## Local setup
 
-Use Node **22.12+**, npm and optionally Docker. From the repository root:
+Node 22.12+ and npm are required. From the repository root:
 
 ```sh
 npm install
@@ -28,141 +29,96 @@ npm run setup:server
 npm run dev
 ```
 
-PowerShell also supports `Copy-Item` instead of `cp`. The setup command installs backend packages, generates Prisma Client, initializes the database and seeds Flat 302 with Kabir, Aman, Riya, Dev, Sneha and 25 expenses over the last 30 days. Re-running seed adds missing demo entries while preserving existing data. Seed UPI IDs are examples, **not verified payment addresses**.
+On PowerShell use Copy-Item in place of cp. The single dev command starts frontend and API together. Frontend: http://127.0.0.1:8080. API: http://127.0.0.1:3001. Health: http://127.0.0.1:3001/health.
 
-Frontend: <http://127.0.0.1:8080>. API: <http://127.0.0.1:3001>. Database health: <http://127.0.0.1:3001/health>.
+The example configuration uses SQLite and USE_CLAUDE_STUB=true, so it needs no cloud account. Setup generates Prisma and creates tables. The seed command only cleans expired demo accounts; it never creates a shared public group. Try demo creates sample data at request time. Existing legacy data is preserved and not assigned to new accounts.
 
-The example server env uses SQLite and a deterministic Claude stub; no cloud account or key is needed. `npm run dev` starts both processes and stops both if either fails. `npm run dev:web` starts just the frontend. Backend scripts run with `server/` as their working directory.
-
-### PostgreSQL locally
-
-```sh
-docker compose up -d db
-```
-
-Set `server/.env` to `DATABASE_URL=postgresql://hostel:hostel_local@127.0.0.1:5432/hostel_khata`, then run `npm run setup:server` again.
-
-`server/prisma/schema.prisma` is the canonical PostgreSQL schema, with checked-in SQL migrations under `server/prisma/migrations`. SQLite uses a generated `schema.sqlite.prisma` derived from the same schema and `prisma db push` for local development; it does not use PostgreSQL migration history. Switching providers requires generating the client again and does not transfer existing data. No destructive reset or production seed runs automatically at API startup.
+For local PostgreSQL, run docker compose up -d db, set DATABASE_URL=postgresql://hostel:hostel_local@127.0.0.1:5432/hostel_khata and rerun setup:server. Canonical schema and PostgreSQL migrations are in server/prisma. SQLite derives the same model into schema.sqlite.prisma and uses db push for local development. Changing providers requires db:generate and does not move data between databases. The member-table rename preserves local IDs and foreign keys. Back up production data before migrations.
 
 ## Environment
 
-Frontend `.env` is public and compiled at build time:
+Keep server/.env git-ignored. Never add a secret to VITE variables or post credentials in chat.
 
-| Variable       | Purpose                                                                            |
-| -------------- | ---------------------------------------------------------------------------------- |
-| `VITE_API_URL` | API origin, e.g. `http://127.0.0.1:3001` or your HTTPS backend origin; omit `/api` |
+| Variable          | Where       | Value / purpose                                                                 |
+| ----------------- | ----------- | ------------------------------------------------------------------------------- |
+| VITE_API_URL      | Frontend    | Empty for same-origin /api proxy; optional API origin for same-site development |
+| DATABASE_URL      | Server      | file:./dev.db locally; PostgreSQL URL in production                             |
+| DIRECT_URL        | Server      | Optional unpooled PostgreSQL migration connection                               |
+| ANTHROPIC_API_KEY | Server only | Your Claude API key                                                             |
+| ANTHROPIC_MODEL   | Server only | A model enabled for your account                                                |
+| USE_CLAUDE_STUB   | Server      | true for deterministic local parsing/reminders/Wrapped; false for real Claude   |
+| NODE_ENV          | Server      | development locally; production enables Secure cookies and HSTS                 |
+| PORT              | Server      | 3001 locally; deployment platform may provide it                                |
+| CORS_ORIGIN       | Server      | Exact comma-separated frontend origins, including scheme; no wildcard           |
+| TRUST_PROXY_HOPS  | Server      | 0 direct locally; deployment's verified proxy hop count (usually 1)             |
 
-Server `server/.env` is ignored by Git:
+To switch to real Claude: put key/model into server/.env, set USE_CLAUDE_STUB=false and restart the API. Test parse, reminder and Wrapped. A missing key returns a clear JSON error. Both parser paths use the same Zod validation, retry-once, fuzzy-member matching and paise share-sum checks. The user-supplied system prompt is preserved in server/prompts/parsePrompt.ts; temperature is 0.2 or lower.
 
-| Variable            | Purpose                                                                             |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| `DATABASE_URL`      | PostgreSQL URL, or `file:./dev.db` locally, relative to `server/`                   |
-| `DIRECT_URL`        | Optional direct/unpooled PostgreSQL URL for migrations; runtime uses `DATABASE_URL` |
-| `ANTHROPIC_API_KEY` | Server-only secret; never use a `VITE_` prefix                                      |
-| `ANTHROPIC_MODEL`   | A Claude model ID enabled for your account                                          |
-| `USE_CLAUDE_STUB`   | Exactly `true` enables offline fixtures; `false` calls Claude                       |
-| `PORT`              | API port, default `3001`                                                            |
-| `CORS_ORIGIN`       | Comma-separated frontend origins without trailing slashes                           |
-| `GROUP_CODE`        | Server-selected demo group, default `flat-302`                                      |
-| `TRUST_PROXY_HOPS`  | `0` locally; set the verified reverse-proxy hop count on your host                  |
+## Accounts and privacy
 
-### Switch to real Claude
+Passwords use bcrypt with 12 rounds. Random 256-bit session cookies are httpOnly, SameSite=Lax and Secure in production with the __Host- prefix. Only SHA-256 session digests are stored in the database; no token enters localStorage. Logout revokes the session. Normal sessions expire in seven days; demo sessions in 24 hours. Hourly/startup cleanup removes expired demo data, expired sessions and old lockout counters.
 
-1. Set `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` in the server environment.
-2. Set `USE_CLAUDE_STUB=false` and restart the API.
-3. Parse a short sentence, review the payer/participants, then save it.
+Signup/login have per-IP and per-email throttles and persistent short lockouts after repeated failures. Login failure messages do not reveal whether an email exists. Email/password accounts are self-contained: email verification and password recovery are not implemented.
 
-Without a key and with the stub off, parsing returns 503 and exactly `{ "error": "ANTHROPIC_API_KEY not configured" }`. Stub mode never instantiates the Anthropic client. Both paths use the same Zod validation, fuzzy member resolution, sum checks and retry-once pipeline. The user-supplied prompt is stored verbatim in `server/prompts/parsePrompt.ts`. `PARSE_SYSTEM_PROMPT` is the system prompt and `buildParseUserMessage` constructs the single user message. Temperature is 0. Names come from the DB and dates use Asia/Kolkata. Parse persists nothing.
+Every non-public app endpoint requires a valid session. Ledger scope comes from the session's selected group plus an **active database membership**, never an unchecked client group ID. Pending and removed members cannot use the group. Unknown/inaccessible groups return the same generic error. New payers and shares must be active members in that group. Removed-member history is retained; profile edits do not alter former memberships.
 
-The stub covers multiple expenses, timestamped chat senders/noise, Hinglish numbers, subsets/exclusions, exact/percentage allocations, priced itemized meals and repayments. It is a deterministic demo grammar, not arbitrary language understanding; unsupported or incomplete wording requires review. Unknown amounts remain visible as 0 with clarification required; saving rejects them. Only unique close name matches are accepted; arbitrary nicknames need review. Real parsing sends the submitted text and member names to Anthropic, so avoid submitting unrelated private chat history.
+Invites use a cryptographically random 10-character unambiguous code (50 bits), expiry, optional usage cap, revocation and rotation. Join attempts have per-user/IP limits and persistent invalid-code lockouts. A pending request consumes one invite use; retrying it does not consume another. Default expiry is seven days; configurable up to 90 days. Admins approve/reject/remove, configure approval, transfer admin and delete. Leaving requires a zero balance; a last admin must transfer or delete. Group changes reload private query/draft state and block unsaved reviews.
 
-## REST API
+Helmet, credential CORS, Origin checks on writes, 128KB JSON limits, Zod input/response contracts and generic production errors are enabled. Parse/reminder allow ten requests/minute/account; Wrapped allows twenty. IP/demo limits and the Wrapped caption cache are process-local; use a shared rate-limit/cache store before horizontal scaling. Persistent account/join lockouts already use the database.
 
-Errors consistently return `{ "error": "friendly message" }`. Zod validates requests and responses, including the frontend HTTP boundary. Status codes: invalid input 400, unknown records 404, data conflicts 409, unresolved/invalid splits 422, throttling 429, upstream Claude failure 502, missing parser configuration 503 and internal failure 500.
+## Payments
 
-| Method | Endpoint            | Input / result                                                |
-| ------ | ------------------- | ------------------------------------------------------------- |
-| GET    | `/health`           | Checks database connectivity                                  |
-| GET    | `/api/group`        | `{ id, name, members }`                                       |
-| POST   | `/api/parse`        | `{ text, mode, speaker? }` → `{ expenses: ParsedExpense[] }`  |
-| POST   | `/api/expenses`     | `{ expenses: ParsedExpense[], rawText? }` → `Expense[]`       |
-| GET    | `/api/expenses`     | Optional `memberId`, `q` (description/payer), `month=YYYY-MM` |
-| PATCH  | `/api/expenses/:id` | `Partial<Expense>`; merged record must balance                |
-| DELETE | `/api/expenses/:id` | 204                                                           |
-| GET    | `/api/balances`     | `Balance[]`                                                   |
-| GET    | `/api/settlements`  | `Settlement[]`                                                |
-| GET    | `/api/report`       | `month=YYYY-MM`; defaults to current India month              |
-| POST   | `/api/members`      | `{ name, upiId? }`                                            |
-| PATCH  | `/api/members/:id`  | `Partial<Member>`                                             |
-| DELETE | `/api/members/:id`  | 204; refuses removal if referenced by expenses                |
+Money moves directly between UPI apps; Hostel Khata is a ledger, not a gateway. UPI links and QR encode receiver VPA/name, exact rupees, INR and Hostel Khata note. No UPI callback is trusted as proof. UTR is optional user-entered metadata.
 
-The frontend retains `parseText(text, mode)`, so sends no explicit speaker. First-person statements without a chat sender need payer confirmation. The REST endpoint accepts `speaker` for other clients. The original parsed input is preserved as `rawText` when confirmed. Shares in `ParsedExpense` always represent rupee amounts, including percent/itemized splits.
+Only a payer can create their own pending claim. Only the receiver can confirm/dispute it; only the payer can cancel pending. A receiver can record cash actually received. Pending/disputed/cancelled records do not change balances. Confirmation atomically creates one linked settlement and is idempotent, including concurrent requests. Pending claims reserve available debt/credit; stale or excessive amounts fail. Confirmed payment ledger entries cannot be edited/deleted through expense CRUD. Direct Settlement imports are rejected and redirected to the two-sided flow. Group deletion removes the whole scoped ledger after confirmation in the UI.
 
-DB money uses integer paise. Shares must total the amount exactly and reference unique members in this group. Equal splits floor the base share and give leftover paise to the payer. If the payer is excluded and there is a remainder, include the payer or choose an exact split; the server never silently adds participants. Saving a batch is atomic. Foreign keys protect referenced members.
+The bell counts incoming receipts and dispute notices for payer/admin; the group inbox shows payment history. Balances, settlements and payment records refresh every 15 seconds. No email/SMS or paid service is needed. Razorpay is intentionally excluded. See docs/PAYMENTS.md.
 
-Net = paid minus shares, including repayments. Settlements preserve every paise and minimize payment count through exact zero-sum partitioning for up to 16 nonzero member balances. Larger groups use largest-debtor/creditor greedy matching for bounded response time; that fallback is not globally optimal. Repayments are ordinary expenses with description `Settlement`, category `other`, and a single recipient share. “Record payment” requires confirmation; opening UPI or a QR does not prove payment. Repayments can be edited/deleted in History. Reports include repayments in totals and explicitly say so in the shareable summary.
+All stored amounts are integer paise. API amounts are rupees. Net balance is paid minus owed, including confirmed settlements. Equal splits assign leftover paise to the payer; for a non-divisible equal split the payer must participate, otherwise use an exact split. Simplification uses exact minimum-payment partitioning for up to 16 nonzero balances, then a bounded greedy fallback. Reports include repayments; Wrapped spending awards exclude them. Wrapped captions have a bounded process-local cache invalidated when facts change.
 
-App endpoints require a server session and verified active group membership. Legacy shared seed data is unassigned and inaccessible through the API. CORS is not authentication. Use isolated demo sessions for judging. Parsing is limited to 10 requests/minute/IP with an in-process store; use a shared limiter if deploying multiple replicas. JSON bodies are capped at 128 KiB and parse text at 20,000 characters.
+## API
 
-## Wispr Flow input
+Public: GET /health; POST /api/auth/signup, /login, /demo; GET /api/auth/me; POST /api/auth/logout (revokes any matching cookie).
 
-Hold Fn using Wispr Flow to dictate into normal text fields. The app never intercepts Fn or requests audio access. On Add, Ctrl/Cmd+Enter parses the paragraph; review the cards and explicitly save.
+Authenticated account: PATCH /api/auth/profile; GET/POST /api/groups; POST /api/groups/join.
 
-## Verification
+Verified membership on the requested group: POST /api/groups/:id/select, /leave; GET /api/groups/:id/members. Admin only: GET/POST /api/groups/:id/invites; DELETE /api/groups/:id/invites/:inviteId; PATCH /api/groups/:id/settings; POST /api/groups/:id/members/:memberId/approve or /reject; DELETE /api/groups/:id/members/:memberId; POST /api/groups/:id/transfer-admin; DELETE /api/groups/:id.
+
+Active selected-group membership on every endpoint below:
+
+- GET /api/group
+- POST /api/parse
+- GET/POST /api/expenses; PATCH/DELETE /api/expenses/:id
+- GET /api/balances, /api/settlements, /api/report?month=YYYY-MM
+- POST /api/reminder; GET /api/wrapped?month=YYYY-MM
+- GET/POST /api/payments; POST /api/payments/cash; POST /api/payments/:id/confirm, /dispute, /cancel
+- PATCH /api/members/:id is profile-self only; DELETE is admin-only. Legacy POST /api/members returns an invite-required error.
+
+Errors are always { error: string }. src/lib/api.ts is the sole frontend HTTP boundary; shared contracts/types are validated at the boundary. No component imports demo fixtures.
+
+## Checks
 
 ```sh
-npm test
 npx tsc --noEmit
-npm --prefix server run build
+npm run lint
+npm test
 npm run test:integration
-npm run build
+npm run build:all
 ```
 
-Unit tests cover paise conversion/rounding, 3–5 member settlements, tiny balances, everyone settled, a single creditor, circular debt, repayments, fuzzy/ambiguous names, invalid model output and retry feedback, stub/key behavior and frontend HTTP failures. Integration tests use a real DB and HTTP for parse → confirm → save → edit → balances → repayment → all settled → report, plus CRUD validation, isolation, rollback, CORS, malformed JSON and throttling. They create/delete only uniquely named test groups, leaving Flat 302 intact. Generate/initialize the DB before integration tests.
+Frontend tests default to a single fork worker for Windows reliability. If the host interrupts a run, run the affected file directly. Integration tests start real Express servers and use the configured development DB; they create isolated fixtures and remove their own records. Use a disposable local database, never the production connection. Authorization tests exercise each ledger/group route with outsiders, pending/removed members and exhausted/expired/revoked invites. Payment tests include receiver permissions, reservation/overpayment, concurrent confirmation, cash and ledger effects. Security tests cover production cookies/headers, CSRF, body limits and per-account LLM throttles.
 
-## Deployment
+## Deployment: Vercel + Render / Railway
 
-### Frontend on Vercel
+No live deployment has been made from this workspace. Configure the hosting accounts and URLs before publishing.
 
-This is TanStack Start, not a static SPA. Vite selects Nitro's `vercel` preset when Vercel sets `VERCEL`; `vercel.json` uses `npm run build`. Deploy the repository root with Node 22. Set `VITE_API_URL` to the public HTTPS API origin and rebuild. Nitro emits Vercel Build Output including the server-rendered frontend. Keep Anthropic/database secrets out of frontend env vars.
+1. Provision PostgreSQL on Supabase/Neon/your platform. Set server variables above, NODE_ENV=production, correct CORS_ORIGIN and TRUST_PROXY_HOPS. Deploy the repository Dockerfile server/Dockerfile with repository-root context, or build with npm --prefix server ci and npm --prefix server run build; start with npm --prefix server start. Run npm --prefix server run db:migrate as a release/predeploy command. Do not run a shared seed. Render blueprint is render.yaml; Railway can use the same Dockerfile/start command. Check backend /health.
+2. In vercel.json replace https://replace-with-your-api.onrender.com with the actual HTTPS backend origin. Preserve /api/:path* on both sides of the rewrite. Set VITE_API_URL to empty and deploy the repository root; VERCEL selects Nitro's Vercel preset. Install/build commands are supplied. The browser now sees frontend and API on one origin; Set-Cookie has no Domain attribute and the Secure __Host- cookie belongs to the frontend host.
+3. Set backend CORS_ORIGIN to the exact Vercel/custom frontend origin. Add specific preview origins only if needed; never wildcard credentials. Keep Origin unchanged through a proxy. Verify signup, refresh persistence and logout over HTTPS. Forwarding only through the same-origin proxy avoids cross-site third-party-cookie failures with Vercel + Render. A direct cross-site API URL will fail with SameSite=Lax; use the rewrite rather than weakening cookies. Same-site custom subdomains are another option with exact CORS and credentials.
+4. Test **two separate accounts**, browser and incognito, on the deployed URL: outsider blocked, pending blocked, approval enables access, removal revokes access; parse/review/save, QR/UPI, pending claim and receiver confirmation. Never claim bank receipt unless it actually happened. Test mobile UPI app opening and desktop QR manually.
 
-### Backend on Render or Railway
+The Render predeploy feature may depend on plan availability; if absent run the migration through its release shell before directing traffic. Keep DATABASE_URL server-only. Never generate a client with SQLite for a PostgreSQL deployment; the Docker build generates the canonical PostgreSQL client.
 
-Use Supabase/Neon PostgreSQL and the provider's SSL connection URL. Use a pooled runtime `DATABASE_URL` and direct `DIRECT_URL` for migrations if your provider requires it.
+## Submission
 
-Docker context: repository root. Dockerfile: `server/Dockerfile`. It includes the shared contracts/types. `render.yaml` supplies a blueprint, `/health` and a pre-deploy migration command. On Railway select this Dockerfile and use pre-deploy `npm run db:migrate && npm run db:seed` inside `/app/server`. The image starts with `npm start`, listening on `0.0.0.0:$PORT`.
-
-Without Docker, from the repo root:
-
-```sh
-npm --prefix server ci
-npm --prefix server run build
-npm --prefix server run db:migrate
-npm --prefix server start
-```
-
-Set `DATABASE_URL`, optional `DIRECT_URL`, `CORS_ORIGIN` to your frontend origin, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `USE_CLAUDE_STUB=false`, and the correct `TRUST_PROXY_HOPS`. Run `npm run db:seed` once in `/app/server`, or `npm --prefix server run db:seed` outside Docker. `/health` should return `{ "status": "ok" }`. Do not deploy local SQLite files; containers use PostgreSQL persistence. Hosted deployment and live Claude require your own account configuration.
-
-Continue UI work in the [Lovable project](https://lovable.dev/projects/7f5ab845-09df-430a-9a76-a62b56b5b7d9). Avoid rewriting published history because pushed commits sync with Lovable.
-
-## Repeat expenses
-
-On Add, Repeat WiFi / Doodh / Gas loads the latest matching bill amount and payer into an unsaved review for today. Current members share it equally; confirm or edit the payer, price and split. Missing history never invents an amount. These are manual templates, not automatic recurring charges.
-
-## Three researched additions
-
-- **Recover unfinished review:** parsed/edited unsaved cards and original input are checkpointed only in this browser, bound to the group, with a seven-day expiry. Reload → Restore review → inspect → Save all. Restore never posts expenses. Saving/discarding clears it; invalid or unavailable storage is handled. It does not preserve an unparsed textarea or provide offline Claude/server access.
-- **Who should pay next:** press the group shortcut. Fresh balances select the largest net debtor, disclose ties and explain the choice. It is an optional suggestion, not a payment or spending target. Settle Up already offers payer suggestions; this adds a visible explanation.
-  No new API signatures, credentials, paid services or dependencies were needed. Local checkpoints contain names/expenses/raw text: discard on a shared device. They are last-writer-wins within this browser, not a synchronized backup.
-
-See [regression evidence](docs/REGRESSIONS.md), [complete checklist](docs/CHECKLIST.md), [sourced research and eight ideas](docs/RESEARCH.md), and [final report + two-minute demo](docs/FINAL_REPORT.md).
-
-If the threaded frontend test worker stalls under Windows dev-watch load, use: npx vitest run --pool=forks. Backend tests: npm --prefix server test.
-
-## Accounts
-
-Email/password signup and login use bcrypt (12 rounds, 8-character minimum, 72-byte maximum), with random server-side sessions. Only a random identifier is sent in an httpOnly SameSite=Lax cookie; its SHA-256 digest is stored in the database. Production cookies are Secure and use the __Host- prefix. No login token is stored in browser storage. Logout revokes the session. Login failures are generic; account requests are limited by IP/email and repeated failures trigger a ten-minute lockout.
-
-Try demo creates a separate temporary account/group with five members and 25 expenses. It expires after 24 hours; a startup/hourly cleanup removes expired demo data, and access is denied immediately on expiry. Real accounts without a group go to onboarding. Profile edits name/UPI and keeps membership details synchronized.
-
-Set NODE_ENV=production behind HTTPS. CORS_ORIGIN must include the exact frontend origin; credentialed mutations require an allowed Origin header. For separate Vercel/Render domains use a same-origin /api proxy because SameSite=Lax cookies cannot support cross-site XHR directly.
+See docs/SECURITY_REPORT.md for audit evidence, model/protected endpoints, test results, a two-minute demo script and manual checks. samples/chat.txt uses demo names; for a real private group use its actual approved member names. Historical reports describe earlier implementations and are retained unchanged as delivery evidence.

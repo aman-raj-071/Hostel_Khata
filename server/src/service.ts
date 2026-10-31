@@ -43,14 +43,24 @@ export function validateExpense(expense: Expense, memberIds: string[]) {
     throw new HttpError(422, "Shares must add up exactly to the expense amount.");
 }
 
-export function createService(db: PrismaClient, code = process.env.GROUP_CODE || "flat-302") {
+export function createService(db: PrismaClient, code: string) {
   async function group(client: Prisma.TransactionClient = db) {
     const result = await client.group.findUnique({
       where: { code },
-      include: { members: { where: { status: { not: "pending" } }, orderBy: { name: "asc" } } },
+      include: {
+        members: {
+          where: {
+            OR: [
+              { status: { not: "pending" } },
+              { payments: { some: {} } },
+              { shares: { some: {} } },
+            ],
+          },
+          orderBy: { name: "asc" },
+        },
+      },
     });
-    if (!result)
-      throw new HttpError(503, "Demo group is not initialized. Run the database seed script.");
+    if (!result) throw new HttpError(503, "Group access unavailable.");
     return result;
   }
   async function ledger() {
@@ -105,7 +115,7 @@ export function createService(db: PrismaClient, code = process.env.GROUP_CODE ||
       return {
         id: g.id,
         name: g.name,
-        members: g.members.filter((m) => m.status !== "pending").map(memberDto),
+        members: g.members.map(memberDto),
       };
     },
     list,

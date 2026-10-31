@@ -42,3 +42,15 @@ it("refuses incomplete, fractional-paise or out-of-sync data", () => {
     ]),
   ).toThrow();
 });
+
+it("never suggests pending or removed members for the next shared purchase", () => {
+  const historical = {
+    ...group,
+    members: group.members.map((m) => ({
+      ...m,
+      status: (m.id === "a" ? "removed" : m.id === "r" ? "pending" : "active") as
+        "active" | "pending" | "removed",
+    })),
+  };
+  expect(nextPayers(historical, balances)).toEqual([]);
+});

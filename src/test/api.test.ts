@@ -37,7 +37,8 @@ describe("HTTP data boundary", () => {
     expect(await listExpenses({ memberId: "m 1", q: "chai & maggi", month: "2026-10" })).toEqual(
       [],
     );
-    const url = new URL(fetcher.mock.calls[0]![0]);
+    expect(fetcher.mock.calls[0]![1].credentials).toBe("include");
+    const url = new URL(fetcher.mock.calls[0]![0], "http://127.0.0.1:8080");
     expect(url.searchParams.get("q")).toBe("chai & maggi");
     expect(await addMember("Dev")).toEqual({ id: "m1", name: "Dev" });
     expect(JSON.parse(fetcher.mock.calls[1]![1].body)).toEqual({ name: "Dev" });

@@ -1,42 +1,3 @@
-export async function updateOwnProfile(
-  db: PrismaClient,
-  userId: string,
-  input: { name?: string; upiId?: string },
-) {
-  return db.$transaction(
-    async (tx) => {
-      if (input.name) {
-        const own = await tx.member.findMany({
-          where: { userId, status: { in: ["active", "pending"] } },
-          select: { groupId: true },
-        });
-        const peers = await tx.member.findMany({
-          where: {
-            groupId: { in: own.map((m) => m.groupId) },
-            userId: { not: userId },
-            status: "active",
-          },
-          select: { name: true },
-        });
-        if (peers.some((m) => cleanName(m.name) === cleanName(input.name!)))
-          throw new HttpError(
-            409,
-            "Choose a distinct name for your groups, for example your full name.",
-          );
-      }
-      const user = await tx.user.update({
-        where: { id: userId },
-        data: { ...input, ...(input.upiId === "" ? { upiId: null } : {}) },
-      });
-      await tx.member.updateMany({
-        where: { userId: user.id, status: { in: ["active", "pending"] } },
-        data: { name: user.name, upiId: user.upiId },
-      });
-      return user;
-    },
-    { isolationLevel: "Serializable" },
-  );
-}
 import { randomBytes, createHash } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { rateLimit } from "express-rate-limit";
@@ -204,6 +165,19 @@ export function createAuth(db: PrismaClient) {
   );
   router.get("/me", async (req, res) => {
     const current = await session(req);
+    if (current?.activeGroupId) {
+      const member = await db.member.findFirst({
+        where: { groupId: current.activeGroupId, userId: current.userId, status: "active" },
+        include: { group: true },
+      });
+      if (!member || (member.group.expiresAt && member.group.expiresAt <= new Date())) {
+        await db.session.update({
+          where: { tokenHash: current.tokenHash },
+          data: { activeGroupId: null },
+        });
+        current.activeGroupId = null;
+      }
+    }
     res.json({
       user: current ? userDto(current.user) : null,
       activeGroupId: current?.activeGroupId ?? null,
@@ -223,4 +197,43 @@ export function createAuth(db: PrismaClient) {
     res.json(userDto(user));
   });
   return { router, session };
+}
+export async function updateOwnProfile(
+  db: PrismaClient,
+  userId: string,
+  input: { name?: string; upiId?: string },
+) {
+  return db.$transaction(
+    async (tx) => {
+      if (input.name) {
+        const own = await tx.member.findMany({
+          where: { userId, status: { in: ["active", "pending"] } },
+          select: { groupId: true },
+        });
+        const peers = await tx.member.findMany({
+          where: {
+            groupId: { in: own.map((m) => m.groupId) },
+            userId: { not: userId },
+            status: "active",
+          },
+          select: { name: true },
+        });
+        if (peers.some((m) => cleanName(m.name) === cleanName(input.name!)))
+          throw new HttpError(
+            409,
+            "Choose a distinct name for your groups, for example your full name.",
+          );
+      }
+      const user = await tx.user.update({
+        where: { id: userId },
+        data: { ...input, ...(input.upiId === "" ? { upiId: null } : {}) },
+      });
+      await tx.member.updateMany({
+        where: { userId: user.id, status: { in: ["active", "pending"] } },
+        data: { name: user.name, upiId: user.upiId },
+      });
+      return user;
+    },
+    { isolationLevel: "Serializable" },
+  );
 }

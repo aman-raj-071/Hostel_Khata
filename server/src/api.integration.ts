@@ -53,7 +53,7 @@ beforeAll(async () => {
   });
   outsiderGroup = other.id;
   outsiderId = other.members[0]!.id;
-  server = createApp(db, { groupCode: code, parseLimit: 100 }).listen(0, "127.0.0.1");
+  server = createApp(db, { parseLimit: 100 }).listen(0, "127.0.0.1");
   await new Promise<void>((resolve) => server.on("listening", resolve));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const registered = await call("/api/auth/signup", "POST", {
@@ -120,7 +120,7 @@ describe("real HTTP + Prisma flow", () => {
       data: { error: "ANTHROPIC_API_KEY not configured" },
     });
     vi.stubEnv("USE_CLAUDE_STUB", "true");
-    const limited = createApp(db, { groupCode: code, reminderLimit: 1 }).listen(0, "127.0.0.1");
+    const limited = createApp(db, { reminderLimit: 1 }).listen(0, "127.0.0.1");
     await new Promise<void>((resolve) => limited.on("listening", resolve));
     try {
       const url = `http://127.0.0.1:${(limited.address() as AddressInfo).port}/api/reminder`;
@@ -297,7 +297,7 @@ describe("real HTTP + Prisma flow", () => {
     });
     expect(malformed.status).toBe(400);
     expect(await malformed.json()).toEqual({ error: "Request body must be valid JSON" });
-    const limited = createApp(db, { groupCode: code, parseLimit: 1 }).listen(0, "127.0.0.1");
+    const limited = createApp(db, { parseLimit: 1 }).listen(0, "127.0.0.1");
     await new Promise<void>((resolve) => limited.on("listening", resolve));
     const url = `http://127.0.0.1:${(limited.address() as AddressInfo).port}/api/parse`;
     try {
@@ -319,9 +319,9 @@ describe("real HTTP + Prisma flow", () => {
     }
     expect((await service.getGroup()).id).toBe(groupId);
   });
-  it("seeds 25 demo entries idempotently without overwriting member settings", async () => {
-    const seedCode = `seed-${randomUUID()}`;
-    const seed = () =>
+  it("seed maintenance never creates a shared public group", async () => {
+    const before = await db.group.count();
+    const runSeed = () =>
       promisify(execFile)(
         process.execPath,
         [
@@ -329,33 +329,11 @@ describe("real HTTP + Prisma flow", () => {
           "--env-file-if-exists=.env",
           "prisma/seed.ts",
         ],
-        { cwd: process.cwd(), env: { ...process.env, GROUP_CODE: seedCode }, timeout: 60000 },
+        { cwd: process.cwd(), env: process.env, timeout: 60000 },
       );
-    try {
-      await seed();
-      const seeded = await db.group.findUniqueOrThrow({
-        where: { code: seedCode },
-        include: { members: true, expenses: true },
-      });
-      expect(seeded.members).toHaveLength(5);
-      expect(seeded.expenses).toHaveLength(25);
-      expect(new Set(seeded.expenses.map((expense) => expense.date)).size).toBeGreaterThan(20);
-      await db.member.update({
-        where: { id: seeded.members[0]!.id },
-        data: { upiId: "custom@ybl" },
-      });
-      await seed();
-      expect(await db.expense.count({ where: { groupId: seeded.id } })).toBe(25);
-      expect(
-        (await db.member.findUniqueOrThrow({ where: { id: seeded.members[0]!.id } })).upiId,
-      ).toBe("custom@ybl");
-    } finally {
-      const seeded = await db.group.findUnique({ where: { code: seedCode } });
-      if (seeded) {
-        await db.expense.deleteMany({ where: { groupId: seeded.id } });
-        await db.member.deleteMany({ where: { groupId: seeded.id } });
-        await db.group.delete({ where: { id: seeded.id } });
-      }
-    }
+    await runSeed();
+    await runSeed();
+    expect(await db.group.count()).toBeLessThanOrEqual(before);
+    expect(await db.group.findUnique({ where: { id: groupId } })).not.toBeNull();
   }, 130000);
 });

@@ -34,7 +34,7 @@ import {
 } from "./contracts";
 import { getDraftSource } from "./draft";
 
-const baseUrl = (import.meta.env["VITE_API_URL"] || "http://127.0.0.1:3001").replace(/\/$/, "");
+const baseUrl = (import.meta.env["VITE_API_URL"] || "").replace(/\/$/, "");
 
 async function request<T>(
   path: string,

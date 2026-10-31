@@ -233,6 +233,25 @@ describe("private group authorization", () => {
       ).status,
     ).toBe(422);
   });
+  it("preserves old balances while a removed member requests approval again", async () => {
+    expect((await call(1, "/api/groups/join", "POST", { code: aCode })).data.status).toBe(
+      "pending",
+    );
+    expect((await call(1, "/api/group")).status).toBe(403);
+    const balance = await call(0, "/api/balances");
+    expect(balance.status).toBe(200);
+    expect(balance.data).toContainEqual({ memberId: betaMemberId, net: -250 });
+    const group = await call(0, "/api/group");
+    expect(group.data.members.find((m: { id: string }) => m.id === betaMemberId).status).toBe(
+      "pending",
+    );
+    expect((await call(0, "/api/report?month=2026-10")).data.total).toBe(500);
+    await call(0, "/api/parse", "POST", {
+      text: "KabirScope ne chai 100 sab barabar",
+      mode: "brain-dump",
+    });
+    expect(seen.at(-1)).toEqual([users[0]!.name]);
+  });
   it("supports instant joins only when approval is off, admin transfer, settled leave and confirmed group deletion", async () => {
     const created = await call(0, "/api/groups", "POST", { name: "Transfer group" });
     const id = created.data.groupId;

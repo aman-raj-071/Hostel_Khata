@@ -5,6 +5,10 @@ import { equalSplit, toPaise } from "./money.js";
 import { indiaToday } from "./parser.js";
 
 export async function cleanupExpiredDemos(db: PrismaClient, now = new Date()) {
+  await db.session.deleteMany({ where: { expiresAt: { lte: now } } });
+  await db.authAttempt.deleteMany({
+    where: { windowStart: { lt: new Date(now.getTime() - 86400000) } },
+  });
   const expired = await db.user.findMany({
     where: { demoExpiresAt: { lte: now } },
     select: { id: true },

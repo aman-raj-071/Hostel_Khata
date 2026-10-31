@@ -33,6 +33,10 @@ describe("reminder generation", () => {
       const b = await generateReminder({ ...input, tone, amount: 340.5 }, members);
       expect(a.message.split("\n")[0]).not.toBe(b.message.split("\n")[0]);
       for (const name of ["Aman", "Riya", "₹340.51", "UPI"]) expect(a.message).toContain(name);
+      const link = new URL(a.message.split("\n").at(-1)!);
+      expect(link.protocol).toBe("upi:");
+      expect(link.searchParams.get("pa")).toBe("riya@ybl");
+      expect(link.searchParams.get("am")).toBe("340.51");
       expect(a.message.split("\n").length).toBeLessThanOrEqual(3);
       expect(construct).not.toHaveBeenCalled();
       expect(create).not.toHaveBeenCalled();
