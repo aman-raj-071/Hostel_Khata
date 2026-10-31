@@ -15,6 +15,7 @@ dist-ssr
 .tanstack/**
 .nitro
 .vercel
+.netlify
 .verification-tmp/
 .phase-final-lint.json
 *.local
@@ -41,3 +42,6 @@ server/prisma/schema.sqlite.prisma
 *.njsproj
 *.sln
 *.sw?
+
+.vercel
+.env*
