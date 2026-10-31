@@ -6,6 +6,9 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+const apiOrigin = process.env["API_ORIGIN"];
+const isAmplify = process.env["AWS_APP_ID"];
+
 export default defineConfig({
   vite: {
     server: {
@@ -16,7 +19,8 @@ export default defineConfig({
     },
   },
   nitro: {
-    preset: "node-server",
+    preset: isAmplify ? "aws-amplify" : "node-server",
+    ...(apiOrigin ? { routeRules: { "/api/**": { proxy: `${apiOrigin}/api/**` } } } : {}),
   },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).

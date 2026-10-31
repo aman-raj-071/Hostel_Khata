@@ -1,5 +1,150 @@
 # Hostel Khata
 
+A full-stack expense tracking application for hostels and shared living spaces.
+
+## Tech Stack
+
+- **Frontend**: TanStack Start (React SSR), TailwindCSS, Radix UI
+- **Backend**: Express.js, Prisma ORM
+- **Database**: PostgreSQL (production) / SQLite (development)
+- **AI**: Anthropic Claude for expense parsing
+
+## Quick Start (Development)
+
+### Prerequisites
+- Node.js 22+
+- npm or bun
+
+### Local Development
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   cd server && npm install && cd ..
+   ```
+
+2. **Set up environment variables:**
+   ```bash
+   # Root .env (optional)
+   cp .env.example .env
+   
+   # Server .env (required)
+   cp server/.env.example server/.env
+   ```
+
+3. **Initialize database:**
+   ```bash
+   cd server
+   npm run db:generate
+   npm run db:migrate
+   npm run db:seed  # Optional: seed with demo data
+   cd ..
+   ```
+
+4. **Start development servers:**
+   ```bash
+   npm run dev
+   ```
+   
+   This starts:
+   - Frontend: http://127.0.0.1:8080
+   - API: http://localhost:3001
+
+## Production Deployment
+
+### AWS Amplify
+
+See [AMPLIFY_DEPLOYMENT.md](./AMPLIFY_DEPLOYMENT.md) for complete AWS Amplify deployment instructions.
+
+**Quick steps:**
+1. Connect your GitHub repo to AWS Amplify
+2. Set environment variables (see `.env.production.example`)
+3. Deploy using the included `amplify.yml`
+
+### Docker Deployment
+
+The backend can be deployed as a Docker container:
+
+```bash
+cd server
+docker build -t hostel-khata-api -f Dockerfile ..
+docker run -p 3001:3001 -e DATABASE_URL="postgresql://..." hostel-khata-api
+```
+
+## Project Structure
+
+```
+hostel-khata/
+├── src/                    # Frontend source
+│   ├── components/         # React components
+│   ├── routes/            # TanStack Router routes
+│   └── lib/               # Utilities & shared types
+├── server/                # Backend API
+│   ├── src/              # Express app & business logic
+│   ├── prisma/           # Database schema & migrations
+│   └── Dockerfile        # Production container
+├── public/               # Static assets
+├── amplify.yml          # AWS Amplify build config
+└── vite.config.ts       # Vite & Nitro config
+```
+
+## Available Scripts
+
+### Root
+- `npm run dev` - Start dev servers (frontend + backend)
+- `npm run build` - Build frontend for production
+- `npm run build:all` - Build both frontend and backend
+- `npm run start:production` - Run production build locally
+- `npm test` - Run all tests
+
+### Server
+- `npm run dev` - Start API dev server with hot reload
+- `npm run build` - Build TypeScript
+- `npm start` - Start production server
+- `npm run db:generate` - Generate Prisma client
+- `npm run db:migrate` - Run database migrations
+- `npm test` - Run backend tests
+
+## Environment Variables
+
+### Development (server/.env)
+```env
+DATABASE_URL=file:./dev.db
+PORT=3001
+CORS_ORIGIN=http://127.0.0.1:8080,http://localhost:8080
+USE_CLAUDE_STUB=true
+```
+
+### Production
+See `.env.production.example` for all production environment variables.
+
+## Features
+
+- 📊 Expense tracking and categorization
+- 👥 Multi-user group management
+- 💰 Balance calculation and settlement suggestions
+- 🤖 AI-powered expense parsing from chat messages
+- 📱 Responsive mobile-first design
+- 🔐 Secure authentication
+- 📈 Monthly reports and analytics
+- 📸 QR code for easy payments
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is private and proprietary.
+
+## Support
+
+For deployment help, see [AMPLIFY_DEPLOYMENT.md](./AMPLIFY_DEPLOYMENT.md).
+
 Private expense splitting for hostel and flatmate groups in India. Dictate a Hinglish paragraph with **Wispr Flow**, check the parsed cards, save, see balances and settle directly through UPI. The app keeps the existing Lovable React/TypeScript/Tailwind design and uses TanStack Start, Express, Prisma and Zod.
 
 **Try demo** on the landing/login pages opens an isolated Flat 302 group with Kabir, Aman, Riya, Dev and Sneha and 25 realistic expenses over 30 days. Each demo expires after 24 hours; fictitious UPI addresses must never receive real money. No signup or Claude key is needed in stub mode.

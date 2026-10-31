@@ -45,3 +45,11 @@ server/prisma/schema.sqlite.prisma
 
 .vercel
 .env*
+!.env.example
+!.env.production.example
+!server/.env.example
+
+# AWS Amplify
+amplify-build-config.json
+amplify-backup/
+amplify/backend/awscloudformation

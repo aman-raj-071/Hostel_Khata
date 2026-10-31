@@ -1,0 +1,29 @@
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - echo "Building backend..."
+        - cd server
+        - npm ci
+        - npm run db:generate
+        - npm run build
+        - cd ..
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - echo "Installing frontend dependencies..."
+        - npm ci
+    build:
+      commands:
+        - echo "Building frontend..."
+        - npm run build
+  artifacts:
+    baseDirectory: .output
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - server/node_modules/**/*
