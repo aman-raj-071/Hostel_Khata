@@ -130,7 +130,7 @@ export async function parseExpenses(
       const raw = await complete(message, validationError);
       const parsed = parsedResponseSchema.parse(JSON.parse(raw));
       return parsedResponseSchema.parse({
-        expenses: parsed.expenses.map((e) => normalizeParsed(e, members)),
+        expenses: parsed.expenses.map((e) => normalizeParsed(e as ParsedExpense, members)),
       });
     } catch (error) {
       if (error instanceof HttpError) throw error;

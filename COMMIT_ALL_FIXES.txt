@@ -1,0 +1,31 @@
+Fix all TypeScript strict mode errors for AWS Amplify deployment
+
+This commit fixes all TypeScript compilation errors in both frontend
+and backend code to enable successful AWS Amplify deployments.
+
+Changes:
+1. src/lib/contracts.ts - Added explicit types to all Zod refinements
+2. server/src/app.ts - Fixed ZodError map callback typing
+3. server/src/parser.ts - Added ParsedExpense type assertion
+4. server/src/groups.ts - Fixed transform callback typing
+5. server/src/service.ts - Fixed shares map callback typing (2 locations)
+6. server/src/reminder.ts - Fixed variants type and null check
+7. server/src/wrapped.ts - Fixed refine callback typing
+8. server/tsconfig.json - Excluded netlify.ts from build
+9. amplify.yml - Added DATABASE_URL fallback for Prisma
+10. server/scripts/prisma.mjs - Added automatic DATABASE_URL default
+
+All TypeScript errors fixed:
+✓ TS7006: Parameter implicitly has 'any' type (10 instances)
+✓ TS2571: Object is of type 'unknown'
+✓ TS18046: Variable is of type 'unknown'
+✓ TS7053: Element implicitly has 'any' type
+✓ TS18048: Variable is possibly 'undefined'
+✓ TS2532: Object is possibly 'undefined'
+
+Build verification:
+✓ npm run build - Frontend builds successfully
+✓ npm --prefix server run build - Backend builds successfully  
+✓ npm run build:all - Full stack builds successfully
+
+Ready for AWS Amplify deployment!

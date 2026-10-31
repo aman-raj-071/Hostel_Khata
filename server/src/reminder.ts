@@ -36,9 +36,11 @@ export async function generateReminder(input: ReminderInput, members: Member[]) 
       ],
     };
     const variant =
-      Array.from(data.fromId + data.toId).reduce((sum, char) => sum + char.charCodeAt(0), paise) %
+      Array.from(data.fromId + data.toId).reduce((sum, char: string) => sum + char.charCodeAt(0), paise) %
       2;
-    message = `${variants[data.tone][variant]}\n${upi}`;
+    const toneVariants = (variants as Record<string, string[]>)[data.tone];
+    if (!toneVariants) throw new HttpError(400, "Invalid tone");
+    message = `${toneVariants[variant] ?? toneVariants[0]}\n${upi}`;
   } else {
     if (!process.env.ANTHROPIC_API_KEY)
       throw new HttpError(503, "ANTHROPIC_API_KEY not configured");

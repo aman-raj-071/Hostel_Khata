@@ -25,7 +25,7 @@ const joinInput = z
       .trim()
       .min(8)
       .max(32)
-      .transform((s) => s.replace(/[-\s]/g, "").toUpperCase()),
+      .transform((s: string) => s.replace(/[-\s]/g, "").toUpperCase()),
   })
   .strict();
 function realAccount(res: Response) {

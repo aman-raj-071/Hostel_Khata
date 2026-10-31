@@ -225,7 +225,7 @@ export function createService(db: PrismaClient, code: string) {
           next.amount !== previous.amount ||
           next.payerId !== previous.payerId ||
           next.shares.length !== previous.shares.length ||
-          next.shares.some((s) => priorShares.get(s.memberId) !== s.amount);
+          next.shares.some((s: { memberId: string; amount: number }) => priorShares.get(s.memberId) !== s.amount);
         validateExpense(
           next,
           g.members.filter((m) => !financialChanged || m.status === "active").map((m) => m.id),
@@ -242,7 +242,7 @@ export function createService(db: PrismaClient, code: string) {
               rawText: next.rawText,
               shares: {
                 deleteMany: {},
-                create: next.shares.map((s) => ({
+                create: next.shares.map((s: { memberId: string; amount: number }) => ({
                   memberId: s.memberId,
                   sharePaise: toPaise(s.amount),
                 })),

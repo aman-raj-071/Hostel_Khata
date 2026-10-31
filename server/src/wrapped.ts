@@ -160,7 +160,7 @@ const captionsSchema = z
           .trim()
           .min(1)
           .max(240)
-          .refine((line) => !/[\r\n]/.test(line)),
+          .refine((line: string) => !/[\r\n]/.test(line)),
       )
       .length(5),
   })
