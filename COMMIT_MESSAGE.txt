@@ -1,0 +1,32 @@
+Add AWS Amplify deployment configuration
+
+This commit adds complete AWS Amplify deployment support:
+
+Changes:
+- Add amplify.yml build specification
+- Add .node-version file (Node 22)
+- Update vite.config.ts with Amplify preset detection
+- Add production build scripts to package.json
+- Improve server/Dockerfile for production deployment
+- Add DATABASE_URL fallback in prisma.mjs for build-time generation
+- Update .gitignore for Amplify files
+
+Documentation:
+- Add DEPLOYMENT_QUICKSTART.md (5-minute setup guide)
+- Add AMPLIFY_DEPLOYMENT.md (comprehensive guide)
+- Add AMPLIFY_TROUBLESHOOTING.md (error solutions)
+- Add .env.production.example (environment template)
+- Add start-production.js (local production testing)
+- Update README.md with deployment info
+
+Key features:
+✓ One-command deployment from GitHub
+✓ Automatic builds on push
+✓ PostgreSQL database support (RDS/Neon)
+✓ Environment-based configuration
+✓ Production-ready security settings
+✓ Comprehensive troubleshooting guides
+
+Deployment cost: $0-30/month (free tier available)
+
+IMPORTANT: Set DATABASE_URL in Amplify before first deploy!

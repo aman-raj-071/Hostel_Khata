@@ -4,6 +4,12 @@ import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import Database from "better-sqlite3";
 
+// Provide a default DATABASE_URL for build-time generation if not set
+if (!process.env.DATABASE_URL) {
+  console.warn("DATABASE_URL not set, using build-time default for Prisma generation");
+  process.env.DATABASE_URL = "postgresql://build:build@localhost:5432/build";
+}
+
 const sqlite = process.env.DATABASE_URL?.startsWith("file:");
 if (sqlite)
   writeFileSync(

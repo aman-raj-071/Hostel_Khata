@@ -6,7 +6,8 @@ backend:
         - echo "Building backend..."
         - cd server
         - npm ci
-        - npm run db:generate
+        - echo "Generating Prisma client with build-time DATABASE_URL..."
+        - DATABASE_URL="${DATABASE_URL:-postgresql://build:build@localhost:5432/build}" npm run db:generate
         - npm run build
         - cd ..
 frontend:

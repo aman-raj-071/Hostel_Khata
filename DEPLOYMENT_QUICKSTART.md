@@ -27,15 +27,21 @@
 4. **Select:** This repo + main branch
 5. **Build settings:** Should auto-detect `amplify.yml` ✓
 
-### 3️⃣ Set Environment Variables
+### 3️⃣ Set Environment Variables **BEFORE FIRST DEPLOY**
+
+⚠️ **CRITICAL**: Set these BEFORE clicking deploy!
 
 In Amplify Console → Environment variables → Add:
 
 ```bash
-# REQUIRED
+# REQUIRED - Set this first!
 DATABASE_URL=postgresql://user:pass@host:5432/dbname?sslmode=require
+
+# Set placeholder, update after deploy
+CORS_ORIGIN=https://placeholder.amplifyapp.com
+
+# Other required variables
 NODE_ENV=production
-CORS_ORIGIN=https://main.d1234567890.amplifyapp.com
 TRUST_PROXY_HOPS=1
 USE_CLAUDE_STUB=false
 

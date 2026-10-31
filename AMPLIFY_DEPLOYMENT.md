@@ -29,16 +29,20 @@
    - Amplify should auto-detect `amplify.yml`
    - If not, use the following build settings:
 
-3. **Set Environment Variables**
+3. **Set Environment Variables (IMPORTANT: Do this BEFORE first deploy!)**
    
    Go to "Environment variables" and add:
 
    **Backend API (server) variables:**
    ```
+   # CRITICAL: Set before deploying!
    DATABASE_URL=postgresql://user:password@host:5432/dbname?sslmode=require
-   DIRECT_URL=postgresql://user:password@host:5432/dbname?sslmode=require
+   
+   # Set placeholder first, update after deploy
+   CORS_ORIGIN=https://placeholder.amplifyapp.com
+   
+   # Other required
    PORT=3001
-   CORS_ORIGIN=https://your-amplify-app-id.amplifyapp.com
    TRUST_PROXY_HOPS=1
    NODE_ENV=production
    USE_CLAUDE_STUB=false
