@@ -11,13 +11,13 @@ export const moneySchema = z
   .min(0)
   .max(MAX_PAISE / 100)
   .refine(
-    (v) => Math.abs(v * 100 - Math.round(v * 100)) < 0.00001,
+    (v: number) => Math.abs(v * 100 - Math.round(v * 100)) < 0.00001,
     "Amounts must have at most two decimal places",
   );
 export const dateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine((v) => {
+  .refine((v: string) => {
     const d = new Date(v + "T00:00:00Z");
     return (
       !Number.isNaN(d.getTime()) &&
@@ -41,7 +41,7 @@ export const upiSchema = z
   .trim()
   .max(100)
   .refine(
-    (s) => s === "" || /^[\w.-]{2,}@[a-zA-Z][a-zA-Z0-9.-]{1,}$/.test(s),
+    (s: string) => s === "" || /^[\w.-]{2,}@[a-zA-Z][a-zA-Z0-9.-]{1,}$/.test(s),
     "Use a valid UPI ID, such as name@okaxis",
   );
 export const memberInput = z.object({ name: nameSchema, upiId: upiSchema.optional() }).strict();
@@ -49,7 +49,7 @@ export const memberPatch = memberInput.partial().extend({ id: idSchema.optional(
 export const expenseSchema = z.object({
   id: idSchema,
   payerId: idSchema,
-  amount: moneySchema.refine((v) => v > 0, "Amount must be positive"),
+  amount: moneySchema.refine((v: number) => v > 0, "Amount must be positive"),
   description: z.string().trim().min(1).max(300),
   category: categorySchema,
   date: dateSchema,
@@ -87,7 +87,7 @@ export const parseInput = z
   .strict();
 export const saveInput = parsedResponseSchema
   .extend({ rawText: z.string().max(20000).optional() })
-  .refine((v) => v.expenses.length > 0, "Add at least one expense");
+  .refine((v: { expenses: unknown[] }) => v.expenses.length > 0, "Add at least one expense");
 export const filtersSchema = z
   .object({
     memberId: idSchema.optional(),
@@ -120,11 +120,11 @@ export const reminderInput = z
   .object({
     fromId: idSchema,
     toId: idSchema,
-    amount: moneySchema.refine((value) => value > 0, "Amount must be positive"),
+    amount: moneySchema.refine((value: number) => value > 0, "Amount must be positive"),
     tone: z.enum(["polite", "filmy", "mummy", "savage"]),
   })
   .strict()
-  .refine((value) => value.fromId !== value.toId, "Choose two different members");
+  .refine((value: { fromId: string; toId: string }) => value.fromId !== value.toId, "Choose two different members");
 export const reminderSchema = z
   .object({
     message: z
@@ -132,7 +132,7 @@ export const reminderSchema = z
       .trim()
       .min(1)
       .max(600)
-      .refine((value) => value.split(/\r?\n/).length <= 3, "Use at most three lines"),
+      .refine((value: string) => value.split(/\r?\n/).length <= 3, "Use at most three lines"),
   })
   .strict();
 
@@ -176,7 +176,7 @@ export const signupInput = loginInput.extend({ name: nameSchema });
 export const profileInput = z
   .object({ name: nameSchema.optional(), upiId: upiSchema.optional() })
   .strict()
-  .refine((v) => Object.keys(v).length > 0, "Provide profile fields");
+  .refine((v: object) => Object.keys(v).length > 0, "Provide profile fields");
 
 export const groupSummarySchema = z.object({
   id: idSchema,
@@ -204,7 +204,7 @@ export const paymentInput = z
   .object({
     fromUserId: idSchema,
     toUserId: idSchema,
-    amount: moneySchema.refine((v) => v > 0, "Amount must be positive"),
+    amount: moneySchema.refine((v: number) => v > 0, "Amount must be positive"),
     upiRef: z.string().trim().max(100).optional(),
     note: z.string().trim().max(500).optional(),
   })
@@ -214,7 +214,7 @@ export const paymentSchema = z.object({
   groupId: idSchema,
   fromUserId: idSchema,
   toUserId: idSchema,
-  amount: moneySchema.refine((v) => v > 0),
+  amount: moneySchema.refine((v: number) => v > 0),
   status: z.enum(["pending", "confirmed", "disputed", "cancelled"]),
   upiRef: z.string().nullable(),
   note: z.string(),

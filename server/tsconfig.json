@@ -11,5 +11,5 @@
     "noUncheckedIndexedAccess": true
   },
   "include": ["src/**/*.ts", "prompts/**/*.ts", "../src/lib/types.ts", "../src/lib/contracts.ts"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.integration.ts"]
+  "exclude": ["src/**/*.test.ts", "src/**/*.integration.ts", "src/netlify.ts", "src/netlify.test.ts"]
 }

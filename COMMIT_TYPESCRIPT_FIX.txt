@@ -1,0 +1,16 @@
+Fix TypeScript errors in contracts.ts for Amplify build
+
+Fixed implicit 'any' type errors in Zod schema refinements by adding
+explicit type annotations to all callback parameters.
+
+Changes:
+- Added type annotations to all .refine() callbacks in contracts.ts
+- Excluded netlify.ts from server build (Netlify support removed)
+- Updated server/tsconfig.json to exclude netlify files
+
+This fixes the build errors:
+- contracts.ts(20,12): error TS7006: Parameter 'v' implicitly has an 'any' type
+- contracts.ts(44,6): error TS7006: Parameter 's' implicitly has an 'any' type
+- And 8 similar errors
+
+All TypeScript strict mode checks now pass.
